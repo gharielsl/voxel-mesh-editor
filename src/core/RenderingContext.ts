@@ -22,7 +22,6 @@ class RenderingContext {
     grid40?: THREE.GridHelper;
     lineX?: THREE.Line;
     lineZ?: THREE.Line;
-    transformContext = new TransformationContext();
     ghostLight = new THREE.PointLight(0xffffff, 10, 10000, 0.25);
     ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     meshObjects: MeshObject[] = [];
@@ -62,6 +61,7 @@ class RenderingContext {
         const delta = this.clock.getDelta();
         this.controls.update();
         TWEEN.update();
+        TransformationContext.INSTANCE.update(this.camera);
         this.camera.rotation.reorder('YXZ');
         state.rotationX = THREE.MathUtils.radToDeg(this.camera.rotation.x);
         state.rotationY = THREE.MathUtils.radToDeg(this.camera.rotation.y);
