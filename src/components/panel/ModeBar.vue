@@ -2,6 +2,7 @@
     import { defineComponent } from 'vue';
     import Multiselect from 'vue-multiselect'
     import 'vue-multiselect/dist/vue-multiselect.css';
+import { state } from '../../state';
 
     export default defineComponent({
         components: {
@@ -9,7 +10,8 @@
         },
         data: () => {
             return {
-                options: ['Object mode', 'Geometry mode']
+                options: ['Object mode', 'Geometry mode'],
+                state
             };
         }
     });
@@ -73,14 +75,14 @@
         <div title="snap" class="mode-bar-right">
             <div class="mode-bar-item">
                 <div class="mode-bar-item-select" style="width: 48px;">
-                    <div class="mode-button" style="background-color: var(--color-secondary);">
+                    <div @click="state.snapActive = !state.snapActive" class="mode-button" :style="`background-color: var(${state.snapActive ? '--color-secondary' : '--color-foreground-2'});`">
                         <i class="bi bi-magnet-fill"></i>
                     </div>
                 </div>
             </div>
             <div title="grid" class="mode-bar-item">
                 <div class="mode-bar-item-select" style="width: 48px;">
-                    <div class="mode-button" style="background-color: var(--color-secondary);">
+                    <div @click="state.setGridActive(!state.gridActive)" class="mode-button" :style="`background-color: var(${state.gridActive ? '--color-secondary' : '--color-foreground-2'});`">
                         <i class="bi bi-grid-3x3"></i>
                     </div>
                 </div>

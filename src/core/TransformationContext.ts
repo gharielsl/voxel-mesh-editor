@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
 import MeshObject from "./MeshObject";
+import { state } from "../state";
 
 class TransformationContext {
     static INSTANCE = new TransformationContext();
@@ -18,8 +19,10 @@ class TransformationContext {
     rotateFree?: MeshObject;
     scene: THREE.Object3D = new THREE.Object3D();
     selectedObjects: MeshObject[] = [];
+    camera?: THREE.Camera;
 
     update = (camera: THREE.Camera) => {
+        this.camera = camera;
         let scale = camera.position.distanceTo(this.scene.position);
         if (scale < 35) {
             scale = 35;
@@ -54,6 +57,7 @@ class TransformationContext {
                     mesh = MeshObject.fromMesh(mesh);
                     mesh.draggable = true;
                     mesh.internal = true;
+                    mesh.geometry.computeBoundingBox();
                 }
                 if (mesh.name === 'X') {
                     this.translateX = mesh;
@@ -68,6 +72,33 @@ class TransformationContext {
                     this.translateFree = mesh;
                     this.scene.add(mesh);
                 }
+            });
+            this.translateX?.addDragListener((ev) => {
+                this.selectedObjects.forEach((mesh) => {
+                    const offset = mesh.position.clone().sub(this.scene.position).x;
+                    mesh.position.x = ev.movement3dXZ.x - this.scene.scale.x * 5 + offset;
+                    if (state.snapActive) {
+                        mesh.position.x = Math.round(mesh.position.x / 10) * 10;
+                    }
+                });
+            });
+            this.translateY?.addDragListener((ev) => {
+                this.selectedObjects.forEach((mesh) => {
+                    const offset = mesh.position.clone().sub(this.scene.position).y;
+                    mesh.position.y = ev.movement3dY.y - this.scene.scale.y * 5 + offset;
+                    if (state.snapActive) {
+                        mesh.position.y = Math.round(mesh.position.y / 10) * 10;
+                    }
+                });
+            });
+            this.translateZ?.addDragListener((ev) => {
+                this.selectedObjects.forEach((mesh) => {
+                    const offset = mesh.position.clone().sub(this.scene.position).z;
+                    mesh.position.z = ev.movement3dXZ.z + this.scene.scale.z * 5 + offset;
+                    if (state.snapActive) {
+                        mesh.position.z = Math.round(mesh.position.z / 10) * 10;
+                    }
+                });
             });
         }, () => { }, console.error);
 

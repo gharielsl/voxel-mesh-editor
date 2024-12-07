@@ -150,6 +150,35 @@ class RenderingContext {
         for (let i = 0; i < this.isMouseDown.length; i++) {
             if (this.isMouseDown[i]) {
                 this.isDragging[i] = true;
+                if (this.lastMeshIntersect) {
+                    const planeXZ = new THREE.Plane();
+                    const planeY = new THREE.Plane();
+                    const cameraDirection = new THREE.Vector3();
+                    this.camera.getWorldDirection(cameraDirection);
+                    planeXZ.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), this.lastMeshIntersect.intersect.point);
+                    planeY.setFromNormalAndCoplanarPoint(cameraDirection, this.lastMeshIntersect.intersect.point);
+                    const offset = this.lastMeshIntersect.intersect.point.clone().sub(this.lastMeshIntersect.intersect.object.position);
+                    const rc = new THREE.Raycaster();
+                    const mouse = new THREE.Vector2();
+                    mouse.x = (ev.offsetX / this.canvas.clientWidth) * 2 - 1;
+                    mouse.y = -(ev.offsetY / this.canvas.clientHeight) * 2 + 1;
+                    rc.setFromCamera(mouse, this.camera);
+                    const planeIntersectXZ = new THREE.Vector3();
+                    const planeIntersectY = new THREE.Vector3();
+                    rc.ray.intersectPlane(planeXZ, planeIntersectXZ);
+                    rc.ray.intersectPlane(planeY, planeIntersectY);
+
+                    const ev3d = ev as MouseEvent3d;
+                    ev3d.movement3dOffset = offset;
+                    ev3d.intersect = this.lastMeshIntersect.intersect;
+                    const mesh = ev3d.intersect.object as MeshObject;
+                    let direction = new THREE.Vector3(ev.movementX, -ev.movementY, 0.5);
+                    direction = direction.unproject(this.camera);
+                    direction = direction.sub(this.camera.position).normalize();
+                    ev3d.movement3dXZ = planeIntersectXZ;
+                    ev3d.movement3dY = planeIntersectY;
+                    mesh.invokeDragEvent(ev3d);
+                }
             }
         }
     }
@@ -239,6 +268,10 @@ class RenderingContext {
         grid.add(this.grid40);
         grid.add(this.lineX);
         grid.add(this.lineZ);
+        state.setGridActive = (active) => {
+            grid.visible = active;
+            state.gridActive = active;
+        }
         this.ghostLight.position.set(1000, 1000, 1000);
         this.scene.add(this.ghostLight);
         this.scene.add(this.ambientLight);
