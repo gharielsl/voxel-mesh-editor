@@ -24,9 +24,11 @@ class RenderingContext {
     lineZ?: THREE.Line;
     ghostLight = new THREE.PointLight(0xffffff, 10, 10000, 0.25);
     ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    meshObjects: MeshObject[] = [];
+    clickableObjects: THREE.Object3D[] = [];
     isMouseDown = [false, false, false, false];
     isDragging = [false, false, false, false];
+    mouseDownPosition = [[0, 0], [0, 0], [0, 0], [0, 0]];
+    lastMeshIntersect?: MouseEvent3d;
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
         this.canvas = canvas;
@@ -54,12 +56,15 @@ class RenderingContext {
         this.canvasContainer.addEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.addEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.addEventListener('mouseup', this.handleMouseUp);
-        this.canvasContainer.addEventListener('click', this.handleMouseEvent);
+        this.canvasContainer.addEventListener('click', this.handleMouseClick);
     }
 
     clearEvents = () => {
         document.removeEventListener('ui-camera-rotate', this.handleCameraRotationFromUi);
-        this.canvasContainer.removeEventListener('click', this.handleMouseEvent);
+        this.canvasContainer.removeEventListener('mousemove', this.handleMouseMove);
+        this.canvasContainer.removeEventListener('mousedown', this.handleMouseDown);
+        this.canvasContainer.removeEventListener('mouseup', this.handleMouseUp);
+        this.canvasContainer.removeEventListener('click', this.handleMouseClick);
     }
 
     update = () => {
@@ -85,10 +90,39 @@ class RenderingContext {
 
     handleMouseDown = (ev: MouseEvent) => {
         this.isMouseDown[ev.button] = true;
+        this.mouseDownPosition[ev.button] = [ev.offsetX, ev.offsetY];
+        const ev3d = ev as MouseEvent3d;
+        const dir = new THREE.Vector3();
+        this.camera.getWorldDirection(dir);
+        const rc = new THREE.Raycaster(this.camera.position, dir);
+        const mouse = new THREE.Vector2();
+        mouse.x = (ev.offsetX / this.canvas.clientWidth) * 2 - 1;
+        mouse.y = -(ev.offsetY / this.canvas.clientHeight) * 2 + 1;
+        rc.setFromCamera(mouse, this.camera);
+        const intersects = rc.intersectObjects(this.clickableObjects, true);
+        let closestIntersect = intersects[0];
+        intersects.forEach((intersect: THREE.Intersection) => {
+            if (!(intersect.object instanceof MeshObject)) {
+                return;
+            }
+            if (intersect.distance < closestIntersect.distance) {
+                closestIntersect = intersect;
+            }
+        });
+        if (!closestIntersect) {
+            return;
+        }
+        ev3d.intersect = closestIntersect;
+        this.lastMeshIntersect = ev3d;
+        const object = (closestIntersect.object as MeshObject);
+        if (object.draggable) {
+            this.controls.enabled = false;
+        }
     }
 
     handleMouseUp = (ev: MouseEvent) => {
         this.isMouseDown[ev.button] = false;
+        this.controls.enabled = true;
     }
 
     handleMouseMove = (ev: MouseEvent) => {
@@ -97,7 +131,7 @@ class RenderingContext {
         }
     }
 
-    handleMouseEvent = (ev: MouseEvent) => {
+    handleMouseClick = (ev: MouseEvent) => {
         if (this.isDragging[ev.button]) {
             this.isDragging[ev.button] = false;
             return;
@@ -110,20 +144,23 @@ class RenderingContext {
         mouse.x = (ev.offsetX / this.canvas.clientWidth) * 2 - 1;
         mouse.y = -(ev.offsetY / this.canvas.clientHeight) * 2 + 1;
         rc.setFromCamera(mouse, this.camera);
-        const intersects = rc.intersectObjects(this.meshObjects, true);
+        const intersects = rc.intersectObjects(this.clickableObjects, true);
         let closestIntersect = intersects[0];
         if (!closestIntersect) {
             this.unselectAll();
             return;
         }
         intersects.forEach((intersect: THREE.Intersection) => {
+            if (!(intersect.object instanceof MeshObject)) {
+                return;
+            }
             if (intersect.distance < closestIntersect.distance) {
                 closestIntersect = intersect;
             }
         });
         ev3d.intersect = closestIntersect;
         const object = (closestIntersect.object as MeshObject);
-        object.invokeMouseEvent(ev3d);
+        object.invokeClickEvent(ev3d);
         if (!object.internal) {
             if (!ev.shiftKey)  {
                 this.unselectAll();
@@ -178,6 +215,7 @@ class RenderingContext {
     createControlMeshes = () => {
         this.scene.add(TransformationContext.INSTANCE.scene);
         TransformationContext.INSTANCE.scene.visible = false;
+        this.clickableObjects.push(TransformationContext.INSTANCE.scene);
     }
 
     createGrid = () => {
@@ -228,14 +266,14 @@ class RenderingContext {
         const ma = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
         const me = new MeshObject(ge, ma);
         this.scene.add(me);
-        this.meshObjects.push(me);
+        this.clickableObjects.push(me);
 
         const ge1 = new THREE.BoxGeometry(7, 7, 7);
         const ma1 = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
         const me1 = new MeshObject(ge1, ma1);
         me1.position.set(15, 2, -1);
         this.scene.add(me1);
-        this.meshObjects.push(me1);
+        this.clickableObjects.push(me1);
     }
 
     destroy = () => {

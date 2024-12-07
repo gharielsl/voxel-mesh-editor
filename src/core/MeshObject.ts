@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import MouseEvent3d from "./MouseEvent3d";
-import TransformationContext from "./TransformationContext";
 
 class MeshObject extends THREE.Mesh {
-    mouseEvents: Set<(ev: MouseEvent3d) => void> = new Set();
+    clickEvents: Set<(ev: MouseEvent3d) => void> = new Set();
+    dragEvents: Set<(ev: MouseEvent3d) => void> = new Set();
     selected: boolean = false;
     internal: boolean = false;
+    draggable: boolean = false;
 
     constructor(geometry: THREE.BufferGeometry, material: THREE.Material | THREE.Material[]) {
         super(geometry, material);
@@ -29,16 +30,30 @@ class MeshObject extends THREE.Mesh {
         this.selected = false;
     }
 
-    addMouseListener(callback: (ev: MouseEvent3d) => void) {
-        this.mouseEvents.add(callback);
+    addClickListener(callback: (ev: MouseEvent3d) => void) {
+        this.clickEvents.add(callback);
     }
 
-    removeMouseListener(callback: (ev: MouseEvent3d) => void) {
-        this.mouseEvents.delete(callback);
+    addDragListener(callback: (ev: MouseEvent3d) => void) {
+        this.dragEvents.add(callback);
     }
 
-    invokeMouseEvent(event: MouseEvent3d) {
-        this.mouseEvents.forEach((callback) => {
+    removeClickListener(callback: (ev: MouseEvent3d) => void) {
+        this.clickEvents.delete(callback);
+    }
+
+    removeDragListener(callback: (ev: MouseEvent3d) => void) {
+        this.dragEvents.delete(callback);
+    }
+
+    invokeClickEvent(event: MouseEvent3d) {
+        this.clickEvents.forEach((callback) => {
+            callback(event);
+        });
+    }
+
+    invokeDragEvent(event: MouseEvent3d) {
+        this.dragEvents.forEach((callback) => {
             callback(event);
         });
     }

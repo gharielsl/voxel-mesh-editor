@@ -4,18 +4,18 @@ import MeshObject from "./MeshObject";
 
 class TransformationContext {
     static INSTANCE = new TransformationContext();
-    translateX?: THREE.Object3D;
-    translateY?: THREE.Object3D;
-    translateZ?: THREE.Object3D;
-    translateFree?: THREE.Object3D;
-    scaleX?: THREE.Object3D;
-    scaleY?: THREE.Object3D;
-    scaleZ?: THREE.Object3D;
-    scaleFree?: THREE.Object3D;
-    rotateX?: THREE.Object3D;
-    rotateY?: THREE.Object3D;
-    rotateZ?: THREE.Object3D;
-    rotateFree?: THREE.Object3D;
+    translateX?: MeshObject;
+    translateY?: MeshObject;
+    translateZ?: MeshObject;
+    translateFree?: MeshObject;
+    scaleX?: MeshObject;
+    scaleY?: MeshObject;
+    scaleZ?: MeshObject;
+    scaleFree?: MeshObject;
+    rotateX?: MeshObject;
+    rotateY?: MeshObject;
+    rotateZ?: MeshObject;
+    rotateFree?: MeshObject;
     scene: THREE.Object3D = new THREE.Object3D();
     selectedObjects: MeshObject[] = [];
 
@@ -44,7 +44,7 @@ class TransformationContext {
         loader.load('/mesh/translate_mesh.glb', (gltf) => {
             const children = [...gltf.scene.children];
             children.forEach((child) => {
-                let mesh = child as THREE.Mesh;
+                let mesh = child as MeshObject;
                 if (mesh.isMesh) {
                     (mesh as any).renderOrder = 999;
                     (mesh as any).material.depthTest = false;
@@ -52,6 +52,7 @@ class TransformationContext {
                     (mesh as any).material.transparent = true;
                     (mesh as any).material.opacity = 0.5;
                     mesh = MeshObject.fromMesh(mesh);
+                    mesh.draggable = true;
                 }
                 if (mesh.name === 'X') {
                     this.translateX = mesh;
@@ -67,7 +68,8 @@ class TransformationContext {
                     this.scene.add(mesh);
                 }
             });
-        }, () => { }, console.log);
+        }, () => { }, console.error);
+
         // loader.load('/mesh/scale_mesh.glb', (gltf) => {
         //     gltf.scene.traverse((child) => {
         //         if (child.name === 'X') {
