@@ -53,6 +53,7 @@ class TransformationContext {
                     (mesh as any).material.opacity = 0.5;
                     mesh = MeshObject.fromMesh(mesh);
                     mesh.draggable = true;
+                    mesh.internal = true;
                 }
                 if (mesh.name === 'X') {
                     this.translateX = mesh;

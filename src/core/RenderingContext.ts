@@ -56,7 +56,6 @@ class RenderingContext {
         this.canvasContainer.addEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.addEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.addEventListener('mouseup', this.handleMouseUp);
-        this.canvasContainer.addEventListener('click', this.handleMouseClick);
     }
 
     clearEvents = () => {
@@ -64,7 +63,6 @@ class RenderingContext {
         this.canvasContainer.removeEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.removeEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.removeEventListener('mouseup', this.handleMouseUp);
-        this.canvasContainer.removeEventListener('click', this.handleMouseClick);
     }
 
     update = () => {
@@ -101,15 +99,20 @@ class RenderingContext {
         rc.setFromCamera(mouse, this.camera);
         const intersects = rc.intersectObjects(this.clickableObjects, true);
         let closestIntersect = intersects[0];
-        intersects.forEach((intersect: THREE.Intersection) => {
+        for (const intersect of intersects) {
             if (!(intersect.object instanceof MeshObject)) {
-                return;
+                continue;
+            }
+            if ((intersect.object as MeshObject).draggable) {
+                closestIntersect = intersect;
+                break;
             }
             if (intersect.distance < closestIntersect.distance) {
                 closestIntersect = intersect;
             }
-        });
+        }
         if (!closestIntersect) {
+            this.lastMeshIntersect = undefined;
             return;
         }
         ev3d.intersect = closestIntersect;
@@ -121,52 +124,33 @@ class RenderingContext {
     }
 
     handleMouseUp = (ev: MouseEvent) => {
+        if (!this.isDragging[ev.button]) {
+            const mesh = this.lastMeshIntersect?.intersect.object as MeshObject;
+            if (mesh) {
+                mesh.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
+                if (!mesh.internal) {
+                    if (!ev.shiftKey) {
+                        this.unselectAll();
+                    }
+                    if (!mesh.selected) {
+                        mesh.select();
+                        TransformationContext.INSTANCE.selectedObjects.push(mesh);
+                    }
+                }
+            } else {
+                this.unselectAll();
+            }
+        }
         this.isMouseDown[ev.button] = false;
+        this.isDragging[ev.button] = false;
         this.controls.enabled = true;
     }
 
     handleMouseMove = (ev: MouseEvent) => {
-        if (this.isMouseDown[ev.button]) {
-            this.isDragging[ev.button] = true;
-        }
-    }
-
-    handleMouseClick = (ev: MouseEvent) => {
-        if (this.isDragging[ev.button]) {
-            this.isDragging[ev.button] = false;
-            return;
-        }
-        const ev3d = ev as MouseEvent3d;
-        const dir = new THREE.Vector3();
-        this.camera.getWorldDirection(dir);
-        const rc = new THREE.Raycaster(this.camera.position, dir);
-        const mouse = new THREE.Vector2();
-        mouse.x = (ev.offsetX / this.canvas.clientWidth) * 2 - 1;
-        mouse.y = -(ev.offsetY / this.canvas.clientHeight) * 2 + 1;
-        rc.setFromCamera(mouse, this.camera);
-        const intersects = rc.intersectObjects(this.clickableObjects, true);
-        let closestIntersect = intersects[0];
-        if (!closestIntersect) {
-            this.unselectAll();
-            return;
-        }
-        intersects.forEach((intersect: THREE.Intersection) => {
-            if (!(intersect.object instanceof MeshObject)) {
-                return;
+        for (let i = 0; i < this.isMouseDown.length; i++) {
+            if (this.isMouseDown[i]) {
+                this.isDragging[i] = true;
             }
-            if (intersect.distance < closestIntersect.distance) {
-                closestIntersect = intersect;
-            }
-        });
-        ev3d.intersect = closestIntersect;
-        const object = (closestIntersect.object as MeshObject);
-        object.invokeClickEvent(ev3d);
-        if (!object.internal) {
-            if (!ev.shiftKey)  {
-                this.unselectAll();
-            }
-            object.select();
-            TransformationContext.INSTANCE.selectedObjects.push(object);
         }
     }
 
