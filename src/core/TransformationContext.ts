@@ -40,6 +40,11 @@ class TransformationContext {
         } else {
             this.scene.userData.visible = false;
         }
+        this.scene.traverse((mesh) => {
+            if (mesh instanceof MeshObject) {
+                (mesh as MeshObject).draggable = this.scene.userData.visible;
+            }
+        })
     }
 
     constructor() {
@@ -53,11 +58,14 @@ class TransformationContext {
                     (mesh as any).material.depthTest = false;
                     (mesh as any).material.depthWrite = false;
                     (mesh as any).material.transparent = true;
-                    (mesh as any).material.opacity = 0.5;
+                    // (mesh as any).material.opacity = 0.5;
                     mesh = MeshObject.fromMesh(mesh);
-                    mesh.draggable = true;
+                    mesh.draggable = false;
                     mesh.internal = true;
                     mesh.geometry.computeBoundingBox();
+                    mesh.onBeforeRender = () => {
+                        mesh.draggable = this.scene.userData.visible;
+                    };
                 }
                 if (mesh.name === 'X') {
                     this.translateX = mesh;

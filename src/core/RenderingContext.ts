@@ -274,7 +274,7 @@ class RenderingContext {
     createGrid = () => {
         const grid = new THREE.Group();
         this.scene.add(grid);
-        // this.scene.fog = new THREE.Fog(new THREE.Color(state.clearColor), 0.01, 1000);
+        this.scene.fog = new THREE.Fog(new THREE.Color(0.13, 0.13, 0.13), 0.01, 1000);
         this.grid10 = new THREE.GridHelper(FAR * 10, FAR - 1, new THREE.Color(0x333333), new THREE.Color(0x333333));
         this.grid40 = new THREE.GridHelper(FAR * 10, (FAR - 1) / 4, new THREE.Color(0xa7a7a7), new THREE.Color(0xa7a7a7));
         this.grid10.material.depthWrite = false;
