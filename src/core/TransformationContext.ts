@@ -36,9 +36,9 @@ class TransformationContext {
                 this.scene.position.add(mesh.position);
             });
             this.scene.position.divideScalar(this.selectedObjects.length);
-            this.scene.visible = true;
+            this.scene.userData.visible = true;
         } else {
-            this.scene.visible = false;
+            this.scene.userData.visible = false;
         }
     }
 

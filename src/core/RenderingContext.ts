@@ -1,6 +1,6 @@
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, FXAAShader, OrbitControls, OutlinePass, RenderPass, ShaderPass, GodRaysFakeSunShader } from 'three/examples/jsm/Addons.js';
 import { state } from '../state';
 import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
@@ -29,6 +29,11 @@ class RenderingContext {
     isDragging = [false, false, false, false];
     mouseDownPosition = [[0, 0], [0, 0], [0, 0], [0, 0]];
     lastMeshIntersect?: MouseEvent3d;
+    effectComposter: EffectComposer;
+    renderPass: RenderPass;
+    outlinePass?: OutlinePass;
+    fxaaPass?: ShaderPass;
+    topLevel: THREE.Scene;
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
         this.canvas = canvas;
@@ -37,8 +42,13 @@ class RenderingContext {
             antialias: true,
             canvas
         });
+        this.effectComposter = new EffectComposer(this.renderer);
         this.scene = new THREE.Scene();
+        this.topLevel = new THREE.Scene();
+        this.topLevel.add(new THREE.AmbientLight(0xffffff, 1));
         this.camera = new THREE.PerspectiveCamera(70, 1, NEAR, FAR);
+        this.renderPass = new RenderPass(this.scene, this.camera);
+        this.effectComposter.addPass(this.renderPass);
         this.camera.position.set(100, 100, 100);
         this.controls = new OrbitControls(this.camera, canvas);
         this.clock = new THREE.Clock(true);
@@ -48,6 +58,7 @@ class RenderingContext {
         this.canvasObserver.observe(canvasContainer);
         this.createGrid();
         this.createControlMeshes();
+        this.createPostProccess();
         this.update();
     }
 
@@ -74,12 +85,18 @@ class RenderingContext {
         state.rotationX = THREE.MathUtils.radToDeg(this.camera.rotation.x);
         state.rotationY = THREE.MathUtils.radToDeg(this.camera.rotation.y);
         state.rotationZ = THREE.MathUtils.radToDeg(this.camera.rotation.z);
-        this.renderer.render(this.scene, this.camera);
+        TransformationContext.INSTANCE.scene.visible = false;
+        this.effectComposter.render();
+        this.renderer.autoClear = false;
+        TransformationContext.INSTANCE.scene.visible = TransformationContext.INSTANCE.scene.userData.visible;
+        this.renderer.render(this.topLevel, this.camera);
+        TransformationContext.INSTANCE.scene.visible = false;
+        this.renderer.autoClear = true;
         requestAnimationFrame(this.update);
     }
 
     unselectAll() {
-        TransformationContext.INSTANCE.scene.visible = false;
+        TransformationContext.INSTANCE.scene.userData.visible = false;
         TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
             mesh.unselect();
         });
@@ -140,6 +157,9 @@ class RenderingContext {
             } else {
                 this.unselectAll();
             }
+        }
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
         }
         this.isMouseDown[ev.button] = false;
         this.isDragging[ev.button] = false;
@@ -222,18 +242,39 @@ class RenderingContext {
         this.canvas.height = h;
         this.renderer.setSize(w, h);
         this.camera.aspect = w / h;
+        this.effectComposter.setSize(w, h);
+        this.outlinePass?.setSize(w, h);
+        if (this.fxaaPass) {
+            this.fxaaPass.uniforms.resolution.value.set( 1 / this.canvas.width, 1 / this.canvas.height );
+        }
         this.camera.updateProjectionMatrix();
+    }
+
+    createPostProccess = () => {
+        this.outlinePass = new OutlinePass(
+            new THREE.Vector2(this.canvas.width, this.canvas.height),
+            this.scene,
+            this.camera,
+            TransformationContext.INSTANCE.selectedObjects
+        );
+        this.outlinePass.edgeGlow = 0;
+        this.fxaaPass = new ShaderPass(FXAAShader);
+        this.fxaaPass.uniforms.resolution.value.set( 1 / this.canvas.width, 1 / this.canvas.height );
+        this.effectComposter.addPass(this.outlinePass);
+        this.effectComposter.addPass(this.fxaaPass);
     }
 
     createControlMeshes = () => {
         this.scene.add(TransformationContext.INSTANCE.scene);
-        TransformationContext.INSTANCE.scene.visible = false;
+        this.topLevel.add(TransformationContext.INSTANCE.scene);
+        TransformationContext.INSTANCE.scene.userData.visible = false;
         this.clickableObjects.push(TransformationContext.INSTANCE.scene);
     }
 
     createGrid = () => {
         const grid = new THREE.Group();
         this.scene.add(grid);
+        // this.scene.fog = new THREE.Fog(new THREE.Color(state.clearColor), 0.01, 1000);
         this.grid10 = new THREE.GridHelper(FAR * 10, FAR - 1, new THREE.Color(0x333333), new THREE.Color(0x333333));
         this.grid40 = new THREE.GridHelper(FAR * 10, (FAR - 1) / 4, new THREE.Color(0xa7a7a7), new THREE.Color(0xa7a7a7));
         this.grid10.material.depthWrite = false;
@@ -263,7 +304,6 @@ class RenderingContext {
             })
         );
         this.renderer.setClearColor(new THREE.Color(state.clearColor));
-        this.scene.fog = new THREE.Fog(new THREE.Color(state.clearColor), 0.01, 1000);
         grid.add(this.grid10);
         grid.add(this.grid40);
         grid.add(this.lineX);
