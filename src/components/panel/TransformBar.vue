@@ -1,29 +1,28 @@
 <script lang="ts">
     import { defineComponent, reactive } from 'vue';
-
-    const { transformState } = reactive({
-        transformState: {
-            mode: 'select'
-        }
-    });
+    import { state } from '../../state';
 
     export default defineComponent({
-
+        data: () => {
+            return {
+                state
+            }
+        }
     });
 </script>
 
 <template>
     <div class="tool-bar">
-        <div title="select" class="tool-bar-item" style="background-color: var(--color-secondary);">
+        <div @click="state.objectModeState = 'select'" title="select" class="tool-bar-item" :style="state.objectModeState === 'select' ? 'background-color: var(--color-secondary);' : ''">
             <i class="bi bi-cursor-fill"></i>
         </div>
-        <div title="move" class="tool-bar-item">
+        <div @click="state.objectModeState = 'move'" title="move" class="tool-bar-item" :style="state.objectModeState === 'move' ? 'background-color: var(--color-secondary);' : ''">
             <i class="bi bi-arrows-move"></i>
         </div>
-        <div title="scale" class="tool-bar-item">
+        <div @click="state.objectModeState = 'scale'" title="scale" class="tool-bar-item" :style="state.objectModeState === 'scale' ? 'background-color: var(--color-secondary);' : ''">
             <i class="bi bi-arrows-fullscreen"></i>
         </div>
-        <div title="rotate" class="tool-bar-item">
+        <div @click="state.objectModeState = 'rotate'" title="rotate" class="tool-bar-item" :style="state.objectModeState === 'rotate' ? 'background-color: var(--color-secondary);' : ''">
             <i class="bi bi-arrow-repeat"></i>
         </div>
     </div>

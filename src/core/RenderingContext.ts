@@ -96,7 +96,8 @@ class RenderingContext {
     }
 
     unselectAll() {
-        TransformationContext.INSTANCE.scene.userData.visible = false;
+        // TransformationContext.INSTANCE.scene.userData.visible = false;
+        TransformationContext.INSTANCE.setVisible(false);
         TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
             mesh.unselect();
         });
@@ -120,11 +121,14 @@ class RenderingContext {
             if (!(intersect.object instanceof MeshObject)) {
                 continue;
             }
+            if ((intersect.object as MeshObject).disableMouseEvents) {
+                continue;
+            }
             if ((intersect.object as MeshObject).draggable) {
                 closestIntersect = intersect;
                 break;
             }
-            if (intersect.distance < closestIntersect.distance) {
+            if (intersect.distance < closestIntersect.distance || (intersects[0].object as MeshObject).disableMouseEvents) {
                 closestIntersect = intersect;
             }
         }
@@ -132,8 +136,10 @@ class RenderingContext {
             this.lastMeshIntersect = undefined;
             return;
         }
+        console.log(closestIntersect);
         ev3d.intersect = closestIntersect;
         this.lastMeshIntersect = ev3d;
+        this.lastMeshIntersect.isFirstMovement = true;
         const object = (closestIntersect.object as MeshObject);
         if (object.draggable) {
             this.controls.enabled = false;
@@ -173,23 +179,34 @@ class RenderingContext {
                 if (this.lastMeshIntersect) {
                     const planeXZ = new THREE.Plane();
                     const planeY = new THREE.Plane();
-                    const cameraDirection = new THREE.Vector3();
+                    let cameraDirection = new THREE.Vector3();
                     this.camera.getWorldDirection(cameraDirection);
+                    cameraDirection.y = 0;
                     planeXZ.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), this.lastMeshIntersect.intersect.point);
                     planeY.setFromNormalAndCoplanarPoint(cameraDirection, this.lastMeshIntersect.intersect.point);
-                    const offset = this.lastMeshIntersect.intersect.point.clone().sub(this.lastMeshIntersect.intersect.object.position);
                     const rc = new THREE.Raycaster();
                     const mouse = new THREE.Vector2();
+                    const mouseO = new THREE.Vector2();
                     mouse.x = (ev.offsetX / this.canvas.clientWidth) * 2 - 1;
                     mouse.y = -(ev.offsetY / this.canvas.clientHeight) * 2 + 1;
+                    mouseO.x = ((ev.offsetX - ev.movementX) / this.canvas.clientWidth) * 2 - 1;
+                    mouseO.y = -((ev.offsetY - ev.movementY) / this.canvas.clientHeight) * 2 + 1;
                     rc.setFromCamera(mouse, this.camera);
                     const planeIntersectXZ = new THREE.Vector3();
                     const planeIntersectY = new THREE.Vector3();
+                    const planeOriginIntersectXZ = new THREE.Vector3();
+                    const planeOriginIntersectY = new THREE.Vector3();
                     rc.ray.intersectPlane(planeXZ, planeIntersectXZ);
                     rc.ray.intersectPlane(planeY, planeIntersectY);
+                    rc.setFromCamera(mouseO, this.camera);
+                    rc.ray.intersectPlane(planeXZ, planeOriginIntersectXZ);
+                    rc.ray.intersectPlane(planeY, planeOriginIntersectY);
 
                     const ev3d = ev as MouseEvent3d;
-                    ev3d.movement3dOffset = offset;
+                    ev3d.movement3dOriginXZ = planeOriginIntersectXZ;
+                    ev3d.movement3dOriginY = planeOriginIntersectY;
+                    ev3d.movement3dStart = this.lastMeshIntersect.intersect.point;
+                    ev3d.isFirstMovement = this.lastMeshIntersect.isFirstMovement;
                     ev3d.intersect = this.lastMeshIntersect.intersect;
                     const mesh = ev3d.intersect.object as MeshObject;
                     let direction = new THREE.Vector3(ev.movementX, -ev.movementY, 0.5);
@@ -198,6 +215,7 @@ class RenderingContext {
                     ev3d.movement3dXZ = planeIntersectXZ;
                     ev3d.movement3dY = planeIntersectY;
                     mesh.invokeDragEvent(ev3d);
+                    this.lastMeshIntersect.isFirstMovement = false;
                 }
             }
         }
@@ -267,7 +285,8 @@ class RenderingContext {
     createControlMeshes = () => {
         this.scene.add(TransformationContext.INSTANCE.scene);
         this.topLevel.add(TransformationContext.INSTANCE.scene);
-        TransformationContext.INSTANCE.scene.userData.visible = false;
+        TransformationContext.INSTANCE.setVisible(false);
+        // TransformationContext.INSTANCE.scene.userData.visible = false;
         this.clickableObjects.push(TransformationContext.INSTANCE.scene);
     }
 

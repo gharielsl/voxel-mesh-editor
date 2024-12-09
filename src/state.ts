@@ -12,6 +12,7 @@ export type SharedState = {
     clearColor: '#c7c7c7',
     snapActive: boolean,
     gridActive: boolean,
+    objectModeState: string,
     setGridActive: (active: boolean) => void
 }
 
@@ -26,5 +27,6 @@ export const state = reactive({
     clearColor: '#222222',
     snapActive: true,
     gridActive: true,
+    objectModeState: 'select',
     setGridActive: (active: boolean) => {}
 });
