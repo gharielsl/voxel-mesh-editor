@@ -17,9 +17,13 @@ class TransformationContext {
     rotateY?: MeshObject;
     rotateZ?: MeshObject;
     rotateFree?: MeshObject;
+    rotateCover?: MeshObject;
     scene: THREE.Object3D = new THREE.Object3D();
     selectedObjects: MeshObject[] = [];
     camera?: THREE.Camera;
+    rotateMaterialX?: THREE.ShaderMaterial;
+    rotateMaterialY?: THREE.ShaderMaterial;
+    rotateMaterialZ?: THREE.ShaderMaterial;
 
     update = (camera: THREE.Camera) => {
         this.camera = camera;
@@ -41,6 +45,15 @@ class TransformationContext {
         } else {
             this.setVisible(false);
             // this.scene.userData.visible = false;
+        }
+        if (this.rotateMaterialX) {
+            this.rotateMaterialX.uniforms.p.value = this.scene.position;
+        }
+        if (this.rotateMaterialY) {
+            this.rotateMaterialY.uniforms.p.value = this.scene.position;
+        }
+        if (this.rotateMaterialZ) {
+            this.rotateMaterialZ.uniforms.p.value = this.scene.position;
         }
     }
 
@@ -81,10 +94,6 @@ class TransformationContext {
             children.forEach((child) => {
                 let mesh = child as MeshObject;
                 if (mesh.isMesh) {
-                    (mesh as any).renderOrder = 999;
-                    (mesh as any).material.depthTest = false;
-                    (mesh as any).material.depthWrite = false;
-                    (mesh as any).material.transparent = true;
                     // (mesh as any).material.opacity = 0.5;
                     mesh = MeshObject.fromMesh(mesh);
                     mesh.draggable = false;
@@ -164,10 +173,6 @@ class TransformationContext {
             children.forEach((child) => {
                 let mesh = child as MeshObject;
                 if (mesh.isMesh) {
-                    (mesh as any).renderOrder = 999;
-                    (mesh as any).material.depthTest = false;
-                    (mesh as any).material.depthWrite = false;
-                    (mesh as any).material.transparent = true;
                     // (mesh as any).material.opacity = 0.5;
                     mesh = MeshObject.fromMesh(mesh);
                     mesh.draggable = false;
@@ -241,6 +246,82 @@ class TransformationContext {
                     }
                     mesh.scale.z = Math.max(mesh.scale.z, 1);
                 });
+            });
+        }, () => { }, console.error);
+
+        loader.load('/mesh/rotate_mesh.glb', (gltf) => {
+            const children = [...gltf.scene.children];
+
+            const createRotateShader = (color: THREE.Color) => {
+                return new THREE.ShaderMaterial({
+                    vertexShader: `
+                    varying vec3 vWorldPosition;
+    
+                    void main() {
+                        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                        vWorldPosition = worldPosition.xyz;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                    `,
+                    fragmentShader: `
+                    uniform vec3 p;
+                    uniform vec3 color;
+    
+                    varying vec3 vWorldPosition;
+    
+                    void main() {
+                        vec3 toFragment = vWorldPosition - p;
+                        vec3 planeNormal = normalize(cameraPosition - p);
+                        float dotProduct = dot(planeNormal, toFragment);
+                        if (dotProduct < 0.0) {
+                            discard;
+                        }
+                        gl_FragColor = vec4(color.xyz, 1.0);
+                    }
+                    `,
+                    uniforms: {
+                        color: {
+                            value: color,
+                        },
+                        p: {
+                            value: new THREE.Vector3(0)
+                        }
+                    }
+                });
+            }
+            this.rotateMaterialX = createRotateShader(new THREE.Color("#E70200"));
+            this.rotateMaterialY = createRotateShader(new THREE.Color("#30E700"));
+            this.rotateMaterialZ = createRotateShader(new THREE.Color("#1500E7"));
+
+            children.forEach((child) => {
+                let mesh = child as MeshObject;
+                if (mesh.isMesh) {
+                    // (mesh as any).material.opacity = 0.5;
+                    // (mesh as any).material.side = THREE.DoubleSide;
+                    mesh = MeshObject.fromMesh(mesh);
+                    mesh.draggable = false;
+                    mesh.internal = true;
+                    mesh.geometry.computeBoundingBox();
+                }
+                if (mesh.name === 'X') {
+                    (mesh as any).material = this.rotateMaterialX;
+                    this.rotateX = mesh;
+                    this.scene.add(mesh);
+                } else if (mesh.name === 'Y') {
+                    (mesh as any).material = this.rotateMaterialY;
+                    this.rotateY = mesh;
+                    this.scene.add(mesh);
+                } else if (mesh.name === 'Z') {
+                    (mesh as any).material = this.rotateMaterialZ;
+                    this.rotateZ = mesh;
+                    this.scene.add(mesh);
+                } else if (mesh.name === 'Free') {
+                    this.rotateFree = mesh;
+                    (mesh.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+                    // (mesh.material as THREE.MeshStandardMaterial).color = new THREE.Color(1, 0.5, 0.5);
+                    // (mesh.material as THREE.MeshStandardMaterial).opacity = 0.2;
+                    // this.scene.add(mesh);
+                }
             });
         }, () => { }, console.error);
     }

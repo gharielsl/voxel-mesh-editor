@@ -86,7 +86,9 @@ class RenderingContext {
         state.rotationY = THREE.MathUtils.radToDeg(this.camera.rotation.y);
         state.rotationZ = THREE.MathUtils.radToDeg(this.camera.rotation.z);
         TransformationContext.INSTANCE.scene.visible = false;
+        this.renderer.clearDepth();
         this.effectComposter.render();
+        this.renderer.clearDepth();
         this.renderer.autoClear = false;
         TransformationContext.INSTANCE.scene.visible = TransformationContext.INSTANCE.scene.userData.visible;
         this.renderer.render(this.topLevel, this.camera);
@@ -136,7 +138,6 @@ class RenderingContext {
             this.lastMeshIntersect = undefined;
             return;
         }
-        console.log(closestIntersect);
         ev3d.intersect = closestIntersect;
         this.lastMeshIntersect = ev3d;
         this.lastMeshIntersect.isFirstMovement = true;
