@@ -323,6 +323,86 @@ class TransformationContext {
                     // this.scene.add(mesh);
                 }
             });
+
+            
+            this.rotateX?.addDragListener((ev) => {
+                if (state.objectModeState !== 'rotate') {
+                    return;
+                }
+                this.selectedObjects.forEach((mesh) => {
+                    if (ev.isFirstMovement) {
+                        mesh.userData.rotation = mesh.rotation.clone();
+                        mesh.userData.prevAngleX = Math.atan2(ev.movement3dOriginY.z, ev.movement3dOriginY.y);
+                    }
+                    const currentAngleX = Math.atan2(ev.movement3dY.z, ev.movement3dY.y);
+                    let deltaAngleX = currentAngleX - mesh.userData.prevAngleX;
+                    if (deltaAngleX > Math.PI) {
+                        deltaAngleX -= 2 * Math.PI;
+                    } else if (deltaAngleX < -Math.PI) {
+                        deltaAngleX += 2 * Math.PI;
+                    }
+                    mesh.userData.prevAngleX = currentAngleX;
+                    mesh.userData.rotation.x += deltaAngleX;
+                    if (state.snapActive) {
+                        mesh.rotation.x = Math.round(mesh.userData.rotation.x / (Math.PI / 18)) * (Math.PI / 18);
+                    } else {
+                        mesh.rotation.x = mesh.userData.rotation.x;
+                    }
+                });
+            });
+
+            this.rotateY?.addDragListener((ev) => {
+                if (state.objectModeState !== 'rotate') {
+                    return;
+                }
+                this.selectedObjects.forEach((mesh) => {
+                    if (ev.isFirstMovement) {
+                        mesh.userData.rotation = mesh.rotation.clone();
+                        mesh.userData.prevAngle = Math.atan2(ev.movement3dOriginXZ.z, ev.movement3dOriginXZ.x);
+                    }
+                    const currentAngle = Math.atan2(ev.movement3dXZ.z, ev.movement3dXZ.x);
+                    let deltaAngle = currentAngle - mesh.userData.prevAngle;
+                    if (deltaAngle > Math.PI) {
+                        deltaAngle -= 2 * Math.PI;
+                    } else if (deltaAngle < -Math.PI) {
+                        deltaAngle += 2 * Math.PI;
+                    }
+                    mesh.userData.prevAngle = currentAngle;
+
+                    mesh.userData.rotation.y -= deltaAngle;
+                    if (state.snapActive) {
+                        mesh.rotation.y = Math.round(mesh.userData.rotation.y / (Math.PI / 18)) * (Math.PI / 18);
+                    } else {
+                        mesh.rotation.y = mesh.userData.rotation.y;
+                    }
+                });
+            });
+
+            this.rotateZ?.addDragListener((ev) => {
+                if (state.objectModeState !== 'rotate') {
+                    return;
+                }
+                this.selectedObjects.forEach((mesh) => {
+                    if (ev.isFirstMovement) {
+                        mesh.userData.rotation = mesh.rotation.clone();
+                        mesh.userData.prevAngleZ = Math.atan2(ev.movement3dOriginY.y, ev.movement3dOriginY.x);
+                    }
+                    const currentAngleZ = Math.atan2(ev.movement3dY.y, ev.movement3dY.x);
+                    let deltaAngleZ = currentAngleZ - mesh.userData.prevAngleZ;
+                    if (deltaAngleZ > Math.PI) {
+                        deltaAngleZ -= 2 * Math.PI;
+                    } else if (deltaAngleZ < -Math.PI) {
+                        deltaAngleZ += 2 * Math.PI;
+                    }
+                    mesh.userData.prevAngleZ = currentAngleZ;
+                    mesh.userData.rotation.z += deltaAngleZ;
+                    if (state.snapActive) {
+                        mesh.rotation.z = Math.round(mesh.userData.rotation.z / (Math.PI / 18)) * (Math.PI / 18);
+                    } else {
+                        mesh.rotation.z = mesh.userData.rotation.z;
+                    }
+                });
+            });
         }, () => { }, console.error);
     }
 }
