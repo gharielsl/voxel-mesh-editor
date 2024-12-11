@@ -5,6 +5,7 @@ import { state } from '../state';
 import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
 import MouseEvent3d from './MouseEvent3d';
+import VoxelMesh from './VoxelMesh';
 
 const NEAR = 0.01;
 const FAR = 1000;
@@ -351,6 +352,15 @@ class RenderingContext {
         me1.position.set(15, 2, -1);
         this.scene.add(me1);
         this.clickableObjects.push(me1);
+
+        const vo = new VoxelMesh();
+        vo.min = new THREE.Vector3(-1, -1, -1);
+        vo.max = new THREE.Vector3(1, 1, 1);
+        vo.setVoxel(0, 0, 0, 1);
+        vo.setVoxel(0, 1, 0, 1);
+        vo.update();
+        console.log(vo);
+        this.scene.add(vo);
     }
 
     destroy = () => {

@@ -296,8 +296,6 @@ class TransformationContext {
             children.forEach((child) => {
                 let mesh = child as MeshObject;
                 if (mesh.isMesh) {
-                    // (mesh as any).material.opacity = 0.5;
-                    // (mesh as any).material.side = THREE.DoubleSide;
                     mesh = MeshObject.fromMesh(mesh);
                     mesh.draggable = false;
                     mesh.internal = true;
