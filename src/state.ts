@@ -9,7 +9,11 @@ export type SharedState = {
     currentRenderMode: '',
     secondaryColor: '#b15b2e',
     primaryColor: '#3e86a0',
-    clearColor: '#c7c7c7'
+    clearColor: '#c7c7c7',
+    snapActive: boolean,
+    gridActive: boolean,
+    objectModeState: string,
+    setGridActive: (active: boolean) => void
 }
 
 export const state = reactive({
@@ -20,5 +24,9 @@ export const state = reactive({
     currentMode: 'object',
     secondaryColor: '#b15b2e',
     primaryColor: '#3e86a0',
-    clearColor: '#222222'
+    clearColor: '#222222',
+    snapActive: true,
+    gridActive: true,
+    objectModeState: 'select',
+    setGridActive: (active: boolean) => {}
 });

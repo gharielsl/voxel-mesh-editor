@@ -36,7 +36,7 @@
 <template>
     <div class="tool-bar">
         <div @click="editClick" title="edit" class="tool-bar-item edit">
-            <i class="bi bi-cup-hot-fill"></i>
+            <i class="bi bi-boxes"></i>
         </div>
         <div @click="measureClick" title="measure" class="tool-bar-item measure">
             <i class="bi bi-rulers"></i>

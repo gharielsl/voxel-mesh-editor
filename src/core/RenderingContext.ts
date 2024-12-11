@@ -1,6 +1,6 @@
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, FXAAShader, OrbitControls, OutlinePass, RenderPass, ShaderPass, GodRaysFakeSunShader } from 'three/examples/jsm/Addons.js';
 import { state } from '../state';
 import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
@@ -22,10 +22,18 @@ class RenderingContext {
     grid40?: THREE.GridHelper;
     lineX?: THREE.Line;
     lineZ?: THREE.Line;
-    transformContext = new TransformationContext();
     ghostLight = new THREE.PointLight(0xffffff, 10, 10000, 0.25);
     ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    meshObjects: MeshObject[] = [];
+    clickableObjects: THREE.Object3D[] = [];
+    isMouseDown = [false, false, false, false];
+    isDragging = [false, false, false, false];
+    mouseDownPosition = [[0, 0], [0, 0], [0, 0], [0, 0]];
+    lastMeshIntersect?: MouseEvent3d;
+    effectComposter: EffectComposer;
+    renderPass: RenderPass;
+    outlinePass?: OutlinePass;
+    fxaaPass?: ShaderPass;
+    topLevel: THREE.Scene;
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
         this.canvas = canvas;
@@ -34,8 +42,13 @@ class RenderingContext {
             antialias: true,
             canvas
         });
+        this.effectComposter = new EffectComposer(this.renderer);
         this.scene = new THREE.Scene();
+        this.topLevel = new THREE.Scene();
+        this.topLevel.add(new THREE.AmbientLight(0xffffff, 1));
         this.camera = new THREE.PerspectiveCamera(70, 1, NEAR, FAR);
+        this.renderPass = new RenderPass(this.scene, this.camera);
+        this.effectComposter.addPass(this.renderPass);
         this.camera.position.set(100, 100, 100);
         this.controls = new OrbitControls(this.camera, canvas);
         this.clock = new THREE.Clock(true);
@@ -45,32 +58,57 @@ class RenderingContext {
         this.canvasObserver.observe(canvasContainer);
         this.createGrid();
         this.createControlMeshes();
+        this.createPostProccess();
         this.update();
     }
 
     createEvents = () => {
         document.addEventListener('ui-camera-rotate', this.handleCameraRotationFromUi);
-        this.canvasContainer.addEventListener('click', this.handleMouseEvent);
+        this.canvasContainer.addEventListener('mousemove', this.handleMouseMove);
+        this.canvasContainer.addEventListener('mousedown', this.handleMouseDown);
+        this.canvasContainer.addEventListener('mouseup', this.handleMouseUp);
     }
 
     clearEvents = () => {
         document.removeEventListener('ui-camera-rotate', this.handleCameraRotationFromUi);
-        this.canvasContainer.removeEventListener('click', this.handleMouseEvent);
+        this.canvasContainer.removeEventListener('mousemove', this.handleMouseMove);
+        this.canvasContainer.removeEventListener('mousedown', this.handleMouseDown);
+        this.canvasContainer.removeEventListener('mouseup', this.handleMouseUp);
     }
 
     update = () => {
         const delta = this.clock.getDelta();
         this.controls.update();
         TWEEN.update();
+        TransformationContext.INSTANCE.update(this.camera);
         this.camera.rotation.reorder('YXZ');
         state.rotationX = THREE.MathUtils.radToDeg(this.camera.rotation.x);
         state.rotationY = THREE.MathUtils.radToDeg(this.camera.rotation.y);
         state.rotationZ = THREE.MathUtils.radToDeg(this.camera.rotation.z);
-        this.renderer.render(this.scene, this.camera);
+        TransformationContext.INSTANCE.scene.visible = false;
+        this.renderer.clearDepth();
+        this.effectComposter.render();
+        this.renderer.clearDepth();
+        this.renderer.autoClear = false;
+        TransformationContext.INSTANCE.scene.visible = TransformationContext.INSTANCE.scene.userData.visible;
+        this.renderer.render(this.topLevel, this.camera);
+        TransformationContext.INSTANCE.scene.visible = false;
+        this.renderer.autoClear = true;
         requestAnimationFrame(this.update);
     }
 
-    handleMouseEvent = (ev: MouseEvent) => {
+    unselectAll() {
+        // TransformationContext.INSTANCE.scene.userData.visible = false;
+        TransformationContext.INSTANCE.setVisible(false);
+        TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
+            mesh.unselect();
+        });
+        TransformationContext.INSTANCE.selectedObjects = [];
+    }
+
+    handleMouseDown = (ev: MouseEvent) => {
+        this.isMouseDown[ev.button] = true;
+        this.mouseDownPosition[ev.button] = [ev.offsetX, ev.offsetY];
         const ev3d = ev as MouseEvent3d;
         const dir = new THREE.Vector3();
         this.camera.getWorldDirection(dir);
@@ -79,18 +117,109 @@ class RenderingContext {
         mouse.x = (ev.offsetX / this.canvas.clientWidth) * 2 - 1;
         mouse.y = -(ev.offsetY / this.canvas.clientHeight) * 2 + 1;
         rc.setFromCamera(mouse, this.camera);
-        const intersects = rc.intersectObjects(this.meshObjects, true);
+        const intersects = rc.intersectObjects(this.clickableObjects, true);
         let closestIntersect = intersects[0];
-        if (!closestIntersect) {
-            return;
-        }
-        intersects.forEach((intersect: THREE.Intersection) => {
-            if (intersect.distance < closestIntersect.distance) {
+        for (const intersect of intersects) {
+            if (!(intersect.object instanceof MeshObject)) {
+                continue;
+            }
+            if ((intersect.object as MeshObject).disableMouseEvents) {
+                continue;
+            }
+            if ((intersect.object as MeshObject).draggable) {
+                closestIntersect = intersect;
+                break;
+            }
+            if (intersect.distance < closestIntersect.distance || (intersects[0].object as MeshObject).disableMouseEvents) {
                 closestIntersect = intersect;
             }
-        });
+        }
+        if (!closestIntersect) {
+            this.lastMeshIntersect = undefined;
+            return;
+        }
         ev3d.intersect = closestIntersect;
-        (closestIntersect.object as MeshObject).invokeMouseEvent(ev3d);
+        this.lastMeshIntersect = ev3d;
+        this.lastMeshIntersect.isFirstMovement = true;
+        const object = (closestIntersect.object as MeshObject);
+        if (object.draggable) {
+            this.controls.enabled = false;
+        }
+    }
+
+    handleMouseUp = (ev: MouseEvent) => {
+        if (!this.isDragging[ev.button]) {
+            const mesh = this.lastMeshIntersect?.intersect.object as MeshObject;
+            if (mesh) {
+                mesh.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
+                if (!mesh.internal) {
+                    if (!ev.shiftKey) {
+                        this.unselectAll();
+                    }
+                    if (!mesh.selected) {
+                        mesh.select();
+                        TransformationContext.INSTANCE.selectedObjects.push(mesh);
+                    }
+                }
+            } else {
+                this.unselectAll();
+            }
+        }
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+        }
+        this.isMouseDown[ev.button] = false;
+        this.isDragging[ev.button] = false;
+        this.controls.enabled = true;
+    }
+
+    handleMouseMove = (ev: MouseEvent) => {
+        for (let i = 0; i < this.isMouseDown.length; i++) {
+            if (this.isMouseDown[i]) {
+                this.isDragging[i] = true;
+                if (this.lastMeshIntersect) {
+                    const planeXZ = new THREE.Plane();
+                    const planeY = new THREE.Plane();
+                    let cameraDirection = new THREE.Vector3();
+                    this.camera.getWorldDirection(cameraDirection);
+                    cameraDirection.y = 0;
+                    planeXZ.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), this.lastMeshIntersect.intersect.point);
+                    planeY.setFromNormalAndCoplanarPoint(cameraDirection, this.lastMeshIntersect.intersect.point);
+                    const rc = new THREE.Raycaster();
+                    const mouse = new THREE.Vector2();
+                    const mouseO = new THREE.Vector2();
+                    mouse.x = (ev.offsetX / this.canvas.clientWidth) * 2 - 1;
+                    mouse.y = -(ev.offsetY / this.canvas.clientHeight) * 2 + 1;
+                    mouseO.x = ((ev.offsetX - ev.movementX) / this.canvas.clientWidth) * 2 - 1;
+                    mouseO.y = -((ev.offsetY - ev.movementY) / this.canvas.clientHeight) * 2 + 1;
+                    rc.setFromCamera(mouse, this.camera);
+                    const planeIntersectXZ = new THREE.Vector3();
+                    const planeIntersectY = new THREE.Vector3();
+                    const planeOriginIntersectXZ = new THREE.Vector3();
+                    const planeOriginIntersectY = new THREE.Vector3();
+                    rc.ray.intersectPlane(planeXZ, planeIntersectXZ);
+                    rc.ray.intersectPlane(planeY, planeIntersectY);
+                    rc.setFromCamera(mouseO, this.camera);
+                    rc.ray.intersectPlane(planeXZ, planeOriginIntersectXZ);
+                    rc.ray.intersectPlane(planeY, planeOriginIntersectY);
+
+                    const ev3d = ev as MouseEvent3d;
+                    ev3d.movement3dOriginXZ = planeOriginIntersectXZ;
+                    ev3d.movement3dOriginY = planeOriginIntersectY;
+                    ev3d.movement3dStart = this.lastMeshIntersect.intersect.point;
+                    ev3d.isFirstMovement = this.lastMeshIntersect.isFirstMovement;
+                    ev3d.intersect = this.lastMeshIntersect.intersect;
+                    const mesh = ev3d.intersect.object as MeshObject;
+                    let direction = new THREE.Vector3(ev.movementX, -ev.movementY, 0.5);
+                    direction = direction.unproject(this.camera);
+                    direction = direction.sub(this.camera.position).normalize();
+                    ev3d.movement3dXZ = planeIntersectXZ;
+                    ev3d.movement3dY = planeIntersectY;
+                    mesh.invokeDragEvent(ev3d);
+                    this.lastMeshIntersect.isFirstMovement = false;
+                }
+            }
+        }
     }
 
     handleCameraRotationFromUi = (ev: any) => {
@@ -132,16 +261,40 @@ class RenderingContext {
         this.canvas.height = h;
         this.renderer.setSize(w, h);
         this.camera.aspect = w / h;
+        this.effectComposter.setSize(w, h);
+        this.outlinePass?.setSize(w, h);
+        if (this.fxaaPass) {
+            this.fxaaPass.uniforms.resolution.value.set( 1 / this.canvas.width, 1 / this.canvas.height );
+        }
         this.camera.updateProjectionMatrix();
+    }
+
+    createPostProccess = () => {
+        this.outlinePass = new OutlinePass(
+            new THREE.Vector2(this.canvas.width, this.canvas.height),
+            this.scene,
+            this.camera,
+            TransformationContext.INSTANCE.selectedObjects
+        );
+        this.outlinePass.edgeGlow = 0;
+        this.fxaaPass = new ShaderPass(FXAAShader);
+        this.fxaaPass.uniforms.resolution.value.set( 1 / this.canvas.width, 1 / this.canvas.height );
+        this.effectComposter.addPass(this.outlinePass);
+        this.effectComposter.addPass(this.fxaaPass);
     }
 
     createControlMeshes = () => {
         this.scene.add(TransformationContext.INSTANCE.scene);
+        this.topLevel.add(TransformationContext.INSTANCE.scene);
+        TransformationContext.INSTANCE.setVisible(false);
+        // TransformationContext.INSTANCE.scene.userData.visible = false;
+        this.clickableObjects.push(TransformationContext.INSTANCE.scene);
     }
 
     createGrid = () => {
         const grid = new THREE.Group();
         this.scene.add(grid);
+        this.scene.fog = new THREE.Fog(new THREE.Color(0.13, 0.13, 0.13), 0.01, 1000);
         this.grid10 = new THREE.GridHelper(FAR * 10, FAR - 1, new THREE.Color(0x333333), new THREE.Color(0x333333));
         this.grid40 = new THREE.GridHelper(FAR * 10, (FAR - 1) / 4, new THREE.Color(0xa7a7a7), new THREE.Color(0xa7a7a7));
         this.grid10.material.depthWrite = false;
@@ -171,11 +324,14 @@ class RenderingContext {
             })
         );
         this.renderer.setClearColor(new THREE.Color(state.clearColor));
-        this.scene.fog = new THREE.Fog(new THREE.Color(state.clearColor), 0.01, 1000);
         grid.add(this.grid10);
         grid.add(this.grid40);
         grid.add(this.lineX);
         grid.add(this.lineZ);
+        state.setGridActive = (active) => {
+            grid.visible = active;
+            state.gridActive = active;
+        }
         this.ghostLight.position.set(1000, 1000, 1000);
         this.scene.add(this.ghostLight);
         this.scene.add(this.ambientLight);
@@ -187,7 +343,14 @@ class RenderingContext {
         const ma = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
         const me = new MeshObject(ge, ma);
         this.scene.add(me);
-        this.meshObjects.push(me);
+        this.clickableObjects.push(me);
+
+        const ge1 = new THREE.BoxGeometry(7, 7, 7);
+        const ma1 = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+        const me1 = new MeshObject(ge1, ma1);
+        me1.position.set(15, 2, -1);
+        this.scene.add(me1);
+        this.clickableObjects.push(me1);
     }
 
     destroy = () => {

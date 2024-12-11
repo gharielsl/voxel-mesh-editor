@@ -25,6 +25,10 @@ import RenderingContext from '../core/RenderingContext';
 </template>
 
 <style scoped>
+    #canvas-container {
+        height: 100%;
+    }
+
     canvas {
         position: absolute;
         left: 0;
