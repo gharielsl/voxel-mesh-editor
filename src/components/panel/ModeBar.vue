@@ -90,7 +90,7 @@
                     </div>
                 </div>
             </div>
-            <div class="mode-bar-item" :style="`width: ${space}px;`"></div>
+            <div :style="`width: ${space}px;`"></div>
         </div>
     </div>
 </template>

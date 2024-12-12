@@ -15,7 +15,8 @@ export type SharedState = {
     objectModeState: string,
     setGridActive: (active: boolean) => void,
     setCurrentMode: (mode: 'object' | 'sculpt') => void,
-    brushSize: number
+    brushSize: number,
+    brushShape: 'sqaure' | 'round'
 }
 
 export const state = reactive({
@@ -32,5 +33,6 @@ export const state = reactive({
     objectModeState: 'select',
     setGridActive: (active: boolean) => {},
     setCurrentMode: (mode: 'object' | 'sculpt') => {},
-    brushSize: 5
+    brushSize: 3,
+    brushShape: 'round'
 });

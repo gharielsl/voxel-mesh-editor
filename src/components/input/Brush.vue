@@ -20,7 +20,7 @@ export default defineComponent({
             }
         },
         inputChange(event: any) {
-            state.brushSize = event.target.value;
+            state.brushSize = +event.target.value;
         }
     },
     mounted() {
@@ -57,10 +57,10 @@ export default defineComponent({
             </div>
             <p style="margin: 4px;margin-bottom:0;text-align: left;">Shape</p>
             <div style="display: flex;width: 100%;justify-content: space-around;flex:1;align-items: center;">
-                <div class="brush-type" style="background-color: var(--color-secondary);">
+                <div @click="state.brushShape = 'square'" class="brush-type" :style="`background-color: var(${state.brushShape === 'square' ? '--color-secondary' : '--color-foreground-2'});`">
                     <i class="bi bi-square-fill"></i>
                 </div>
-                <div class="brush-type" style="background-color: var(--color-foreground-2);">
+                <div @click="state.brushShape = 'round'" class="brush-type" :style="`background-color: var(${state.brushShape === 'round' ? '--color-secondary' : '--color-foreground-2'});`">
                     <i class="bi bi-circle-fill"></i>
                 </div>
             </div>
