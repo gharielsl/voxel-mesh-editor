@@ -38,6 +38,7 @@ class RenderingContext {
     lastMouseMove?: MouseEvent;
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
+        state.renderingContext = this;
         this.canvas = canvas;
         this.canvasContainer = canvasContainer;
         this.renderer = new THREE.WebGLRenderer({
@@ -134,6 +135,8 @@ class RenderingContext {
         }
     }
 
+    clipboard: MeshObject[] = [];
+
     handleKeyUp = (ev: KeyboardEvent) => {
         if (ev.code === 'Delete') {
             TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
@@ -144,6 +147,26 @@ class RenderingContext {
                 this.scene.remove(mesh);
             });
             TransformationContext.INSTANCE.selectedObjects = [];
+        }
+        if (ev.code === 'KeyV' && ev.ctrlKey) {
+            this.unselectAll();
+            this.clipboard.forEach((o) => {
+                const copy = o.clone();
+                this.scene.add(copy);
+                this.clickableObjects.push(copy);
+                this
+                TransformationContext.INSTANCE.selectedObjects.push(copy);
+                copy.select();
+            });
+            if (this.outlinePass) {
+                this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+            }
+        }
+        if (ev.code === 'KeyC' && ev.ctrlKey) {
+            this.clipboard = [];
+            TransformationContext.INSTANCE.selectedObjects.forEach((o) => {
+                this.clipboard.push(o);
+            });
         }
     }
 
@@ -203,7 +226,14 @@ class RenderingContext {
                     if (!mesh.selected) {
                         mesh.select();
                         TransformationContext.INSTANCE.selectedObjects.push(mesh);
+                    } else if (ev.shiftKey) {
+                        mesh.unselect();
+                        let indexOfMesh = TransformationContext.INSTANCE.selectedObjects.indexOf(mesh);
+                        if (indexOfMesh !== -1) {
+                            TransformationContext.INSTANCE.selectedObjects.splice(indexOfMesh, 1);
+                        }
                     }
+                    
                     if (this.outlinePass) {
                         this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                     }
@@ -395,10 +425,7 @@ class RenderingContext {
         const vo = new VoxelMesh();
         vo.min = new THREE.Vector3(-20, -20, -20);
         vo.max = new THREE.Vector3(20, 20, 20);
-        vo.setVoxel(0, 0, 0, 1);
-        vo.setVoxel(0, 1, 0, 1);
-        vo.setVoxel(0, 1, 1, 1);
-        vo.update();
+        vo.draw(new THREE.Vector3(), 'square', 5, 1);
         this.clickableObjects.push(vo);
         this.scene.add(vo);
     }

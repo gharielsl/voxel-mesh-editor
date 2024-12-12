@@ -89,6 +89,16 @@ class MeshObject extends THREE.Mesh {
             callback(event);
         });
     }
+
+    clone = () => {
+        const copy = super.clone() as any;
+        for (const key of Object.keys(this)) {
+            if (!(key in copy)) {
+                copy[key] = (this as any)[key];
+            }
+        }
+        return copy;
+    }
 }
 
 export default MeshObject;

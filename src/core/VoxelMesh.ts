@@ -49,7 +49,8 @@ class VoxelMesh extends MeshObject {
             cube.scale.setScalar(state.brushSize * 2 + 1);
             sphere.visible = state.brushShape === 'round';
             cube.visible = state.brushShape === 'square';
-            const position = ev.intersect.point.clone().floor();
+            let position = ev.intersect.point.clone().floor();
+            position = this.worldToLocal(position);
             sphere.position.copy(position);
             cube.position.copy(position);
         });
@@ -66,22 +67,26 @@ class VoxelMesh extends MeshObject {
                 let point = ev.intersect.point.floor();
                 point = this.worldToLocal(point);
                 const brushSize = +state.brushSize + 1;
-                for (let x = -brushSize; x < brushSize; x++) {
-                    for (let y = -brushSize; y < brushSize; y++) {
-                        for (let z = -brushSize; z < brushSize; z++) {
-                            if (state.brushShape === 'square') {
-                                this.setVoxel(point.x + x, point.y + y, point.z + z, ev.button === 2 ? 0 : 1);
-                            } else if (state.brushShape === 'round') {
-                                if (new THREE.Vector3(x, y, z).length() < brushSize) {
-                                    this.setVoxel(point.x + x, point.y + y, point.z + z, ev.button === 2 ? 0 : 1);
-                                }
-                            }
+                this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1);
+            }
+        });
+    }
+
+    draw = (position: THREE.Vector3, shape: string, size: number, voxel: number) => {
+        for (let x = -size; x < size; x++) {
+            for (let y = -size; y < size; y++) {
+                for (let z = -size; z < size; z++) {
+                    if (shape === 'square') {
+                        this.setVoxel(position.x + x, position.y + y, position.z + z, voxel);
+                    } else if (shape === 'round') {
+                        if (new THREE.Vector3(x, y, z).length() < size) {
+                            this.setVoxel(position.x + x, position.y + y, position.z + z, voxel);
                         }
                     }
                 }
-                this.update();
             }
-        });
+        }
+        this.update();
     }
 
     update = () => {
