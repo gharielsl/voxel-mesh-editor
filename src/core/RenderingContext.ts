@@ -5,6 +5,7 @@ import { state } from '../state';
 import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
 import MouseEvent3d from './MouseEvent3d';
+import VoxelMesh from './VoxelMesh';
 
 const NEAR = 0.01;
 const FAR = 1000;
@@ -34,6 +35,7 @@ class RenderingContext {
     outlinePass?: OutlinePass;
     fxaaPass?: ShaderPass;
     topLevel: THREE.Scene;
+    lastMouseMove?: MouseEvent;
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
         this.canvas = canvas;
@@ -67,6 +69,7 @@ class RenderingContext {
         this.canvasContainer.addEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.addEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.addEventListener('mouseup', this.handleMouseUp);
+        document.addEventListener('keyup', this.handleKeyUp);
     }
 
     clearEvents = () => {
@@ -74,10 +77,33 @@ class RenderingContext {
         this.canvasContainer.removeEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.removeEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.removeEventListener('mouseup', this.handleMouseUp);
+        document.removeEventListener('keyup', this.handleKeyUp);
     }
 
     update = () => {
         const delta = this.clock.getDelta();
+        if (this.lastMouseMove) {
+            let hover = this.intersectObject(this.lastMouseMove.offsetX, this.lastMouseMove.offsetY);
+            this.clickableObjects.forEach((mesh) => {
+                if (!hover) {
+                    (mesh as MeshObject).hover = false;
+                    if (mesh instanceof MeshObject && mesh.hover) {
+                        mesh.invokeHoverOutEvent(this.lastMouseMove as MouseEvent3d);
+                    }
+                } else if (mesh instanceof MeshObject && mesh !== hover.object) {
+                    if (mesh.hover) {
+                        mesh.invokeHoverOutEvent(this.lastMouseMove as MouseEvent3d);
+                    }
+                    (mesh as MeshObject).hover = false;
+                }
+            });
+            const ev3d = this.lastMouseMove as MouseEvent3d;
+            ev3d.intersect = hover;
+            if (hover && hover.object instanceof MeshObject) {
+                (hover.object as MeshObject).hover = true;
+                (hover.object as MeshObject).invokeHoverEvent(ev3d);
+            }
+        }
         this.controls.update();
         TWEEN.update();
         TransformationContext.INSTANCE.update(this.camera);
@@ -98,24 +124,34 @@ class RenderingContext {
     }
 
     unselectAll() {
-        // TransformationContext.INSTANCE.scene.userData.visible = false;
         TransformationContext.INSTANCE.setVisible(false);
         TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
             mesh.unselect();
         });
         TransformationContext.INSTANCE.selectedObjects = [];
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+        }
     }
 
-    handleMouseDown = (ev: MouseEvent) => {
-        this.isMouseDown[ev.button] = true;
-        this.mouseDownPosition[ev.button] = [ev.offsetX, ev.offsetY];
-        const ev3d = ev as MouseEvent3d;
-        const dir = new THREE.Vector3();
-        this.camera.getWorldDirection(dir);
-        const rc = new THREE.Raycaster(this.camera.position, dir);
+    handleKeyUp = (ev: KeyboardEvent) => {
+        if (ev.code === 'Delete') {
+            TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
+                const index = this.clickableObjects.indexOf(mesh);
+                if (index > -1) {
+                    this.clickableObjects.splice(index, 1);
+                }
+                this.scene.remove(mesh);
+            });
+            TransformationContext.INSTANCE.selectedObjects = [];
+        }
+    }
+
+    intersectObject = (x: number, y: number) => {
+        const rc = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-        mouse.x = (ev.offsetX / this.canvas.clientWidth) * 2 - 1;
-        mouse.y = -(ev.offsetY / this.canvas.clientHeight) * 2 + 1;
+        mouse.x = (x / this.canvas.clientWidth) * 2 - 1;
+        mouse.y = -(y / this.canvas.clientHeight) * 2 + 1;
         rc.setFromCamera(mouse, this.camera);
         const intersects = rc.intersectObjects(this.clickableObjects, true);
         let closestIntersect = intersects[0];
@@ -134,6 +170,14 @@ class RenderingContext {
                 closestIntersect = intersect;
             }
         }
+        return closestIntersect;
+    }
+
+    handleMouseDown = (ev: MouseEvent) => {
+        this.isMouseDown[ev.button] = true;
+        this.mouseDownPosition[ev.button] = [ev.offsetX, ev.offsetY];
+        const ev3d = ev as MouseEvent3d;
+        let closestIntersect = this.intersectObject(ev.offsetX, ev.offsetY);
         if (!closestIntersect) {
             this.lastMeshIntersect = undefined;
             return;
@@ -150,9 +194,9 @@ class RenderingContext {
     handleMouseUp = (ev: MouseEvent) => {
         if (!this.isDragging[ev.button]) {
             const mesh = this.lastMeshIntersect?.intersect.object as MeshObject;
-            if (mesh) {
-                mesh.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
-                if (!mesh.internal) {
+            if (mesh && !(mesh as any).disableMouseEvents) {
+                mesh?.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
+                if (!mesh.internal && state.currentMode === 'object') {
                     if (!ev.shiftKey) {
                         this.unselectAll();
                     }
@@ -160,13 +204,13 @@ class RenderingContext {
                         mesh.select();
                         TransformationContext.INSTANCE.selectedObjects.push(mesh);
                     }
+                    if (this.outlinePass) {
+                        this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                    }
                 }
             } else {
                 this.unselectAll();
             }
-        }
-        if (this.outlinePass) {
-            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
         }
         this.isMouseDown[ev.button] = false;
         this.isDragging[ev.button] = false;
@@ -174,10 +218,13 @@ class RenderingContext {
     }
 
     handleMouseMove = (ev: MouseEvent) => {
+        this.lastMouseMove = ev;
         for (let i = 0; i < this.isMouseDown.length; i++) {
             if (this.isMouseDown[i]) {
                 this.isDragging[i] = true;
-                if (this.lastMeshIntersect) {
+                if (this.lastMeshIntersect && 
+                    this.lastMeshIntersect.intersect.object && 
+                    !(this.lastMeshIntersect.intersect.object as any).disableMouseEvents) {
                     const planeXZ = new THREE.Plane();
                     const planeY = new THREE.Plane();
                     let cameraDirection = new THREE.Vector3();
@@ -332,6 +379,12 @@ class RenderingContext {
             grid.visible = active;
             state.gridActive = active;
         }
+        state.setCurrentMode = (mode) => {
+            state.currentMode = mode;
+            if (mode !== 'object') {
+                this.unselectAll();
+            }
+        }
         this.ghostLight.position.set(1000, 1000, 1000);
         this.scene.add(this.ghostLight);
         this.scene.add(this.ambientLight);
@@ -339,18 +392,15 @@ class RenderingContext {
     }
 
     test = () => {
-        const ge = new THREE.BoxGeometry(10, 10, 10);
-        const ma = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-        const me = new MeshObject(ge, ma);
-        this.scene.add(me);
-        this.clickableObjects.push(me);
-
-        const ge1 = new THREE.BoxGeometry(7, 7, 7);
-        const ma1 = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-        const me1 = new MeshObject(ge1, ma1);
-        me1.position.set(15, 2, -1);
-        this.scene.add(me1);
-        this.clickableObjects.push(me1);
+        const vo = new VoxelMesh();
+        vo.min = new THREE.Vector3(-20, -20, -20);
+        vo.max = new THREE.Vector3(20, 20, 20);
+        vo.setVoxel(0, 0, 0, 1);
+        vo.setVoxel(0, 1, 0, 1);
+        vo.setVoxel(0, 1, 1, 1);
+        vo.update();
+        this.clickableObjects.push(vo);
+        this.scene.add(vo);
     }
 
     destroy = () => {

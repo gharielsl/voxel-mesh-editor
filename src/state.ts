@@ -5,7 +5,7 @@ export type SharedState = {
     rotationY: number,
     rotationZ: number,
     currentTool: 'edit' | 'measure' | 'explore' | 'annotate',
-    currentMode: 'object' | 'geometry' | 'sculpt',
+    currentMode: 'object' | 'sculpt',
     currentRenderMode: '',
     secondaryColor: '#b15b2e',
     primaryColor: '#3e86a0',
@@ -13,7 +13,10 @@ export type SharedState = {
     snapActive: boolean,
     gridActive: boolean,
     objectModeState: string,
-    setGridActive: (active: boolean) => void
+    setGridActive: (active: boolean) => void,
+    setCurrentMode: (mode: 'object' | 'sculpt') => void,
+    brushSize: number,
+    brushShape: 'sqaure' | 'round'
 }
 
 export const state = reactive({
@@ -28,5 +31,8 @@ export const state = reactive({
     snapActive: true,
     gridActive: true,
     objectModeState: 'select',
-    setGridActive: (active: boolean) => {}
+    setGridActive: (active: boolean) => {},
+    setCurrentMode: (mode: 'object' | 'sculpt') => {},
+    brushSize: 3,
+    brushShape: 'round'
 });

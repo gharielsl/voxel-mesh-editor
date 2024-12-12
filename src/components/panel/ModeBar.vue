@@ -1,16 +1,32 @@
 <script lang="ts">
     import { defineComponent } from 'vue';
-    import Multiselect from 'vue-multiselect'
+    import Multiselect from 'vue-multiselect';
+    import Brush from '../input/Brush.vue';
     import 'vue-multiselect/dist/vue-multiselect.css';
-import { state } from '../../state';
+    import { state } from '../../state';
 
     export default defineComponent({
         components: {
-            Multiselect
+            Multiselect,
+            Brush
+        },
+        methods: {
+            resize() {
+                this.space = window.innerWidth < 1200 ? 4 : 8;
+                this.rightVisible = window.innerWidth >= 1045;
+            }
+        },
+        mounted() {
+            window.addEventListener('resize', this.resize);
+        },
+        unmounted() {
+            window.removeEventListener('resize', this.resize);
         },
         data: () => {
             return {
                 options: ['Object mode', 'Geometry mode'],
+                space: window.innerWidth  < 1200 ? 4 : 8,
+                rightVisible: window.innerWidth >= 1045,
                 state
             };
         }
@@ -33,7 +49,7 @@ import { state } from '../../state';
             </div>
             <div class="mode-bar-item">
                 <div class="mode-bar-item-select">
-                    <div class="mode-button" style="background-color: var(--color-secondary);">
+                    <div @click="state.setCurrentMode('object')" class="mode-button" :style="state.currentMode === 'object' ? 'background-color: var(--color-secondary);' : ''">
                         <i class="bi bi-box-fill"></i>
                         Object Mode
                     </div>
@@ -41,38 +57,17 @@ import { state } from '../../state';
             </div>
             <div class="mode-bar-item">
                 <div class="mode-bar-item-select">
-                    <div class="mode-button">
+                    <div @click="state.setCurrentMode('sculpt')" class="mode-button" :style="state.currentMode === 'sculpt' ? 'background-color: var(--color-secondary);' : ''">
                         <i class="bi bi-hammer"></i>
                         Sculpt Mode
                     </div>
                 </div>
             </div>
-            <div class="mode-bar-item">
-                <div class="mode-bar-brush-size">
-                    <div class="mode-bar-brush-size-icon">
-                        Brush size
-                    </div>
-                    <input placeholder="px" type="number">
-                </div>
-            </div>
-            <div class="mode-bar-item">
-                <div class="mode-bar-mat-preview">
-                    <div class="mode-bar-mat-preview-icon">
-                        Voxel color
-                    </div>
-                    <input placeholder="px" type="color">
-                </div>
-            </div>
-            <div class="mode-bar-item">
-                <div class="mode-bar-mat-preview">
-                    <div class="mode-bar-mat-preview-icon">
-                        Voxel material
-                    </div>
-                    <input placeholder="px" type="color">
-                </div>
+            <div v-if="state.currentMode === 'sculpt'" class="mode-bar-item">
+                <Brush />
             </div>
         </div>
-        <div title="snap" class="mode-bar-right">
+        <div v-if="rightVisible" title="snap" class="mode-bar-right">
             <div class="mode-bar-item">
                 <div class="mode-bar-item-select" style="width: 48px;">
                     <div @click="state.snapActive = !state.snapActive" class="mode-button" :style="`background-color: var(${state.snapActive ? '--color-secondary' : '--color-foreground-2'});`">
@@ -95,13 +90,14 @@ import { state } from '../../state';
                     </div>
                 </div>
             </div>
+            <div :style="`width: ${space}px;`"></div>
         </div>
     </div>
 </template>
 
 <style scoped>
     .mode-bar {
-        width: 100%;
+        /* width: 100%; */
         height: 64px;
         background-color: var(--color-background);
         border: 1px var(--color-foreground-2) solid;
@@ -119,13 +115,10 @@ import { state } from '../../state';
         display: flex;
         justify-content: center;
         align-items: center;
-        padding-left: 8px;
-        padding-right: 8px;
+        margin-left: v-bind(space + 'px');
     }
 
     .mode-bar-item-select {
-        padding-left: 8px;
-        padding-right: 4px;
         display: flex;
     }
 
@@ -157,60 +150,5 @@ import { state } from '../../state';
     .mode-button:hover {
         color: var(--color-primary);
         cursor: pointer;
-    }
-
-    .mode-bar-brush-size {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background-color: var(--color-foreground-2);
-        height: 48px;
-        border-radius: 8px;
-    }
-
-    .mode-bar-brush-size input {
-        width: 120px;
-        margin-left: 8px;
-    }
-
-    .mode-bar-brush-size-icon {
-        /* width: 32px; */
-        padding-left: 4px;
-        padding-right: 4px;
-        height: 100%;
-        overflow: hidden;
-        border-radius: 8px 0px 0px 8px;
-        background-color: var(--color-foreground-1);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .mode-bar-mat-preview {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background-color: var(--color-foreground-2);
-        height: 48px;
-        border-radius: 8px;
-    }
-
-    .mode-bar-mat-preview input {
-        width: 30px;
-        margin-left: 4px;
-        margin-right: 4px;
-    }
-
-    .mode-bar-mat-preview-icon {
-        /* width: 32px; */
-        padding-left: 4px;
-        padding-right: 4px;
-        height: 100%;
-        overflow: hidden;
-        border-radius: 8px 0px 0px 8px;
-        background-color: var(--color-foreground-1);
-        display: flex;
-        justify-content: center;
-        align-items: center;
     }
 </style>

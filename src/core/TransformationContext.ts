@@ -27,6 +27,9 @@ class TransformationContext {
 
     update = (camera: THREE.Camera) => {
         this.camera = camera;
+        if (state.currentMode !== 'object') {
+            this.selectedObjects = [];
+        }
         let scale = camera.position.distanceTo(this.scene.position);
         if (scale < 35) {
             scale = 35;
@@ -55,23 +58,24 @@ class TransformationContext {
         if (this.rotateMaterialZ) {
             this.rotateMaterialZ.uniforms.p.value = this.scene.position;
         }
+        
     }
 
     setVisible = (visible: boolean) => {
         this.scene.userData.visible = visible;
-        if (state.objectModeState === 'move') {
+        if (state.objectModeState === 'move' && state.currentMode === 'object') {
             this.scene.traverse((child) => {
                 child.visible = visible && [this.translateX, this.translateY, this.translateZ, this.translateFree].includes(child as MeshObject);
                 (child as MeshObject).draggable = child.visible;
                 (child as MeshObject).disableMouseEvents = !child.visible;
             });
-        } else if (state.objectModeState === 'scale') {
+        } else if (state.objectModeState === 'scale' && state.currentMode === 'object') {
             this.scene.traverse((child) => {
                 child.visible = visible && [this.scaleX, this.scaleY, this.scaleZ, this.scaleFree].includes(child as MeshObject);
                 (child as MeshObject).draggable = child.visible;
                 (child as MeshObject).disableMouseEvents = !child.visible;
             });
-        } else if (state.objectModeState === 'rotate') {
+        } else if (state.objectModeState === 'rotate' && state.currentMode === 'object') {
             this.scene.traverse((child) => {
                 child.visible = visible && [this.rotateX, this.rotateY, this.rotateZ, this.rotateFree].includes(child as MeshObject);
                 (child as MeshObject).draggable = child.visible;
@@ -115,7 +119,7 @@ class TransformationContext {
                 }
             });
             this.translateX?.addDragListener((ev) => {
-                if (state.objectModeState !== 'move') {
+                if (state.objectModeState !== 'move' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
@@ -132,7 +136,7 @@ class TransformationContext {
                 });
             });
             this.translateY?.addDragListener((ev) => {
-                if (state.objectModeState !== 'move') {
+                if (state.objectModeState !== 'move' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
@@ -149,7 +153,7 @@ class TransformationContext {
                 });
             });
             this.translateZ?.addDragListener((ev) => {
-                if (state.objectModeState !== 'move') {
+                if (state.objectModeState !== 'move' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
@@ -194,7 +198,7 @@ class TransformationContext {
                 }
             });
             this.scaleX?.addDragListener((ev) => {
-                if (state.objectModeState !== 'scale') {
+                if (state.objectModeState !== 'scale' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
@@ -212,7 +216,7 @@ class TransformationContext {
                 });
             });
             this.scaleY?.addDragListener((ev) => {
-                if (state.objectModeState !== 'scale') {
+                if (state.objectModeState !== 'scale' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
@@ -230,7 +234,7 @@ class TransformationContext {
                 });
             });
             this.scaleZ?.addDragListener((ev) => {
-                if (state.objectModeState !== 'scale') {
+                if (state.objectModeState !== 'scale' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
@@ -296,8 +300,6 @@ class TransformationContext {
             children.forEach((child) => {
                 let mesh = child as MeshObject;
                 if (mesh.isMesh) {
-                    // (mesh as any).material.opacity = 0.5;
-                    // (mesh as any).material.side = THREE.DoubleSide;
                     mesh = MeshObject.fromMesh(mesh);
                     mesh.draggable = false;
                     mesh.internal = true;
@@ -326,7 +328,7 @@ class TransformationContext {
 
             
             this.rotateX?.addDragListener((ev) => {
-                if (state.objectModeState !== 'rotate') {
+                if (state.objectModeState !== 'rotate' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
@@ -352,7 +354,7 @@ class TransformationContext {
             });
 
             this.rotateY?.addDragListener((ev) => {
-                if (state.objectModeState !== 'rotate') {
+                if (state.objectModeState !== 'rotate' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
@@ -379,7 +381,7 @@ class TransformationContext {
             });
 
             this.rotateZ?.addDragListener((ev) => {
-                if (state.objectModeState !== 'rotate') {
+                if (state.objectModeState !== 'rotate' || state.currentMode !== 'object') {
                     return;
                 }
                 this.selectedObjects.forEach((mesh) => {
