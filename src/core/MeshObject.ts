@@ -90,7 +90,7 @@ class MeshObject extends THREE.Mesh {
         });
     }
 
-    clone = () => {
+    public clone() {
         const copy = super.clone() as any;
         for (const key of Object.keys(this)) {
             if (!(key in copy)) {

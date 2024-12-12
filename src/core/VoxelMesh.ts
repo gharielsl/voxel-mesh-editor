@@ -143,6 +143,24 @@ class VoxelMesh extends MeshObject {
     getVoxel = (x: number, y: number, z: number) => {
         return this.data[x]?.[y]?.[z] || 0;
     }
+
+    clone() {
+        const copy = super.clone() as any;
+        for (const key of Object.keys(this)) {
+            if (!(key in copy)) {
+                copy[key] = (this as any)[key];
+            }
+        }
+        copy.data = { };
+        for (const [x, _] of Object.entries(this.data)) {
+            for (const [y, _] of Object.entries(this.data)) {
+                for (const [z, _] of Object.entries(this.data)) {
+                    copy.setVoxel(+x, +y, +z, this.getVoxel(+x, +y, +z));
+                }
+            }
+        }
+        return copy;
+    }
 }
 
 export default VoxelMesh;
