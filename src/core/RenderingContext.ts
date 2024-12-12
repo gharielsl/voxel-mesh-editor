@@ -68,6 +68,7 @@ class RenderingContext {
         this.canvasContainer.addEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.addEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.addEventListener('mouseup', this.handleMouseUp);
+        document.addEventListener('keyup', this.handleKeyUp);
     }
 
     clearEvents = () => {
@@ -75,6 +76,7 @@ class RenderingContext {
         this.canvasContainer.removeEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.removeEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.removeEventListener('mouseup', this.handleMouseUp);
+        document.removeEventListener('keyup', this.handleKeyUp);
     }
 
     update = () => {
@@ -99,12 +101,26 @@ class RenderingContext {
     }
 
     unselectAll() {
-        // TransformationContext.INSTANCE.scene.userData.visible = false;
         TransformationContext.INSTANCE.setVisible(false);
         TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
             mesh.unselect();
         });
         TransformationContext.INSTANCE.selectedObjects = [];
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+        }
+    }
+
+    handleKeyUp = (ev: KeyboardEvent) => {
+        if (ev.code === 'Delete') {
+            TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
+                const index = this.clickableObjects.indexOf(mesh);
+                if (index > -1) {
+                    this.clickableObjects.splice(index, 1);
+                }
+                this.scene.remove(mesh);
+            });
+        }
     }
 
     handleMouseDown = (ev: MouseEvent) => {
@@ -153,7 +169,7 @@ class RenderingContext {
             const mesh = this.lastMeshIntersect?.intersect.object as MeshObject;
             if (mesh) {
                 mesh.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
-                if (!mesh.internal) {
+                if (!mesh.internal && state.currentMode === 'object') {
                     if (!ev.shiftKey) {
                         this.unselectAll();
                     }
@@ -161,13 +177,13 @@ class RenderingContext {
                         mesh.select();
                         TransformationContext.INSTANCE.selectedObjects.push(mesh);
                     }
+                    if (this.outlinePass) {
+                        this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                    }
                 }
             } else {
                 this.unselectAll();
             }
-        }
-        if (this.outlinePass) {
-            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
         }
         this.isMouseDown[ev.button] = false;
         this.isDragging[ev.button] = false;
@@ -333,6 +349,12 @@ class RenderingContext {
             grid.visible = active;
             state.gridActive = active;
         }
+        state.setCurrentMode = (mode) => {
+            state.currentMode = mode;
+            if (mode !== 'object') {
+                this.unselectAll();
+            }
+        }
         this.ghostLight.position.set(1000, 1000, 1000);
         this.scene.add(this.ghostLight);
         this.scene.add(this.ambientLight);
@@ -354,12 +376,13 @@ class RenderingContext {
         this.clickableObjects.push(me1);
 
         const vo = new VoxelMesh();
-        vo.min = new THREE.Vector3(-1, -1, -1);
-        vo.max = new THREE.Vector3(1, 1, 1);
+        vo.min = new THREE.Vector3(-20, -20, -20);
+        vo.max = new THREE.Vector3(20, 20, 20);
         vo.setVoxel(0, 0, 0, 1);
         vo.setVoxel(0, 1, 0, 1);
+        vo.setVoxel(0, 1, 1, 1);
         vo.update();
-        console.log(vo);
+        this.clickableObjects.push(vo);
         this.scene.add(vo);
     }
 

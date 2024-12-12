@@ -12,7 +12,7 @@
 </script>
 
 <template>
-    <div class="tool-bar">
+    <div v-if="state.currentMode === 'object'" class="tool-bar">
         <div @click="state.objectModeState = 'select'" title="select" class="tool-bar-item" :style="state.objectModeState === 'select' ? 'background-color: var(--color-secondary);' : ''">
             <i class="bi bi-cursor-fill"></i>
         </div>

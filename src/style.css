@@ -17,8 +17,12 @@
   --color-foreground: rgb(18, 18, 18);
   --color-foreground-1: rgb(31, 31, 31);
   --color-foreground-2: rgb(41, 41, 41);
+  --color-foreground-2-bright: rgb(54, 54, 54);
+  --color-foreground-2-se: #aaa9a9;
+  
   --color-border: #acb5e000;
   --color-text: #ffffff;
+  --color-text-disabled: #aaa9a9;
 
   color: var(--color-text);
 }
