@@ -27,6 +27,21 @@ import TransformationContext from '../../core/TransformationContext';
                     }
                 }
                 this.mouseInAdd = false;
+            },
+            addVoxel() {
+                const vo = new VoxelMesh();
+                vo.draw(new THREE.Vector3(), 'square', 0, 1);
+                vo.update();
+                state.renderingContext?.clickableObjects.push(vo);
+                state.renderingContext?.scene.add(vo);
+                if (state.currentMode === 'object') {
+                    vo.select();
+                    TransformationContext.INSTANCE.selectedObjects.push(vo);
+                    if (state.renderingContext?.outlinePass?.selectedObjects) {
+                        state.renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                    }
+                }
+                this.mouseInAdd = false;
             }
         },
         data() {
@@ -68,6 +83,7 @@ import TransformationContext from '../../core/TransformationContext';
                 </div>
                 <div v-if="mouseInAdd" class="menu-list">
                     <div @click="addVoxelMesh" class="menu-list-item">Voxel Mesh</div>
+                    <div @click="addVoxel" class="menu-list-item">Voxel</div>
                 </div>
             </div>
         </div>
@@ -118,6 +134,8 @@ import TransformationContext from '../../core/TransformationContext';
 
     .menu-list-item {
         border-bottom: 1px solid var(--color-foreground-2);
+        padding-top: 2px;
+        padding-bottom: 2px;
     }
 
     .menu-list-item:hover {

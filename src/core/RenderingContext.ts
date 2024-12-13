@@ -73,6 +73,7 @@ class RenderingContext {
         this.canvasContainer.addEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.addEventListener('mouseup', this.handleMouseUp);
         document.addEventListener('keyup', this.handleKeyUp);
+        document.addEventListener('keydown', this.handleKeyDown);
     }
 
     clearEvents = () => {
@@ -81,6 +82,7 @@ class RenderingContext {
         this.canvasContainer.removeEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.removeEventListener('mouseup', this.handleMouseUp);
         document.removeEventListener('keyup', this.handleKeyUp);
+        document.removeEventListener('keydown', this.handleKeyDown);
     }
 
     update = () => {
@@ -89,10 +91,10 @@ class RenderingContext {
             let hover = this.intersectObject(this.lastMouseMove.offsetX, this.lastMouseMove.offsetY);
             this.clickableObjects.forEach((mesh) => {
                 if (!hover) {
-                    (mesh as MeshObject).hover = false;
                     if (mesh instanceof MeshObject && mesh.hover) {
                         mesh.invokeHoverOutEvent(this.lastMouseMove as MouseEvent3d);
                     }
+                    (mesh as MeshObject).hover = false;
                 } else if (mesh instanceof MeshObject && mesh !== hover.object) {
                     if (mesh.hover) {
                         mesh.invokeHoverOutEvent(this.lastMouseMove as MouseEvent3d);
@@ -139,6 +141,12 @@ class RenderingContext {
 
     clipboard: MeshObject[] = [];
 
+    handleKeyDown = (ev: KeyboardEvent) => {
+        if (ev.key === 'Control') {
+            this.controls.enabled = false;
+        }
+    }
+
     handleKeyUp = (ev: KeyboardEvent) => {
         if (ev.code === 'Delete') {
             TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
@@ -170,6 +178,9 @@ class RenderingContext {
                 this.clipboard.push(o);
             });
         }
+        if (ev.key === 'Control') {
+            this.controls.enabled = true;
+        }
     }
 
     intersectObject = (x: number, y: number) => {
@@ -178,6 +189,8 @@ class RenderingContext {
         mouse.x = (x / this.canvas.clientWidth) * 2 - 1;
         mouse.y = -(y / this.canvas.clientHeight) * 2 + 1;
         rc.setFromCamera(mouse, this.camera);
+        rc.far = 1000;
+        rc.near = 0.0000001;
         const intersects = rc.intersectObjects(this.clickableObjects, true).reverse();
         let closestIntersect = intersects[0];
         for (const intersect of intersects) {
@@ -203,6 +216,7 @@ class RenderingContext {
 
     handleMouseDown = (ev: MouseEvent) => {
         this.isMouseDown[ev.button] = true;
+        state.isMouseDown[ev.button] = true;
         this.mouseDownPosition[ev.button] = [ev.offsetX, ev.offsetY];
         const ev3d = ev as MouseEvent3d;
         let closestIntersect = this.intersectObject(ev.offsetX, ev.offsetY);
@@ -248,6 +262,7 @@ class RenderingContext {
             }
         }
         this.isMouseDown[ev.button] = false;
+        state.isMouseDown[ev.button] = false;
         this.isDragging[ev.button] = false;
         this.controls.enabled = true;
     }
@@ -366,13 +381,13 @@ class RenderingContext {
         this.fxaaPass.uniforms.resolution.value.set( 1 / this.canvas.width, 1 / this.canvas.height );
         this.ssaoPass = new SAOPass(this.scene, this.camera, new THREE.Vector2(this.canvas.width, this.canvas.height));
         this.ssaoPass.params.saoBias = 0.5;
-        this.ssaoPass.params.saoIntensity = 0.02;
+        this.ssaoPass.params.saoIntensity = 0.002;
         this.ssaoPass.params.saoScale = 10;
-        this.ssaoPass.params.saoKernelRadius = 8;
+        this.ssaoPass.params.saoKernelRadius = 16;
         this.ssaoPass.params.saoMinResolution = 0;
         this.effectComposter.addPass(this.outlinePass);
         this.effectComposter.addPass(this.fxaaPass);
-        // this.effectComposter.addPass(this.ssaoPass);
+        this.effectComposter.addPass(this.ssaoPass);
     }
 
     createControlMeshes = () => {

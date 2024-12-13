@@ -13,6 +13,7 @@ class VoxelMesh extends MeshObject {
     marchCubes: boolean = false;
     smoothNormals: boolean = false;
     smoothGeometry: boolean = false;
+    lastDragTime = 0;
 
     constructor() {
         super(new THREE.BoxGeometry(0, 0), new THREE.MeshStandardMaterial());
@@ -58,22 +59,25 @@ class VoxelMesh extends MeshObject {
             }
             sphere.visible = state.brushShape === 'round';
             cube.visible = state.brushShape === 'square';
-            let position = ev.intersect.point.clone().addScalar(0.5).floor();
-            if (!this.marchCubes) {
-                if (ev.intersect.normal?.y as number > 0.5) {
-                    position.y--;
-                }
-                if (ev.intersect.normal?.z as number > 0.5) {
-                    position.z--;
-                }
-                if (ev.intersect.normal?.x as number > 0.5) {
-                    position.x--;
-                }
-                position = position.add(ev.intersect.normal?.clone().floor() as THREE.Vector3);
-            }
+            let position = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
             position = this.worldToLocal(position);
             sphere.position.copy(position);
             cube.position.copy(position);
+            const isAnyDown = state.isMouseDown[0] || state.isMouseDown[2];
+            const isBothDown = state.isMouseDown[0] && state.isMouseDown[2];
+            if (isAnyDown && ev.ctrlKey && !isBothDown && (Date.now() - this.lastDragTime > 100)) {
+                if (state.isMouseDown[2]) {
+                    position = position.add(ev.intersect.normal?.clone().ceil().multiplyScalar(-1) as THREE.Vector3);
+                }
+                if (this.marchCubes) {
+                    const brushSize = state.brushSize + 1;
+                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1);
+                } else {
+                    const brushSize = state.brushSize - 1;
+                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1);
+                }
+                this.lastDragTime = Date.now();
+            }
         });
 
         this.addHoverOutEvent(() => {
@@ -85,19 +89,11 @@ class VoxelMesh extends MeshObject {
 
         this.addClickListener((ev) => {
             if (state.currentMode === 'sculpt') {
-                let point = ev.intersect.point.clone().floor();
+                let point = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
                 if (!this.marchCubes) {
-                    point = ev.intersect.point.clone().addScalar(0.5).floor();
-                    if (ev.intersect.normal?.y as number > 0.5) {
-                        point.y--;
+                    if (ev.button == 2) {
+                        point = point.add(ev.intersect.normal?.clone().ceil().multiplyScalar(-1) as THREE.Vector3);
                     }
-                    if (ev.intersect.normal?.z as number > 0.5) {
-                        point.z--;
-                    }
-                    if (ev.intersect.normal?.x as number > 0.5) {
-                        point.x--;
-                    }
-                    point = point.add(ev.intersect.normal?.clone().floor() as THREE.Vector3);
                 }
                 point = this.worldToLocal(point);
                 if (this.marchCubes) {

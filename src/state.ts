@@ -22,7 +22,8 @@ export type SharedState = {
     renderingContext?: RenderingContext,
     selectedObject?: MeshObject,
     multipleSelections: boolean,
-    objectTransformChange: (object: MeshObject) => void
+    objectTransformChange: (object: MeshObject) => void,
+    isMouseDown: boolean[]
 }
 
 export const state = reactive<SharedState>({
@@ -40,8 +41,9 @@ export const state = reactive<SharedState>({
     objectModeState: 'select',
     setGridActive: () => {},
     setCurrentMode: () => {},
-    brushSize: 3,
-    brushShape: 'round',
+    brushSize: 1,
+    brushShape: 'square',
     multipleSelections: false,
-    objectTransformChange: () => {}
+    objectTransformChange: () => {},
+    isMouseDown: [false, false, false, false]
 });
