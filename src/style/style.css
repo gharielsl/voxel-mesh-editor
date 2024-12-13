@@ -25,6 +25,7 @@
   --color-text-disabled: #aaa9a9;
 
   color: var(--color-text);
+  user-select: none;
 }
 
 a {
@@ -236,4 +237,30 @@ input:checked + .slider:before {
 
 input:checked {
   accent-color: var(--color-secondary);
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #888;
 }

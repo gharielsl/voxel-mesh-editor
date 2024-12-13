@@ -1,8 +1,11 @@
 import * as THREE from "three";
 import { cornerTable, edgeTable, triTable } from "./marching-cubes-tables";
 
-const SmoothNormals = true;
 const TerrainSurface = 0.5;
+
+function hash(v: THREE.Vector3) {
+    return `${v.x},${v.y},${v.z}`;
+}
 
 function getConfigIndex(cube: number[]) {
     let configurationIndex = 0;
@@ -14,20 +17,39 @@ function getConfigIndex(cube: number[]) {
     return configurationIndex;
 }
 
+function addCubeFaces(position: THREE.Vector3, positions: THREE.Vector3[], indices: number[]) {
+    const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const index = cubeGeometry.index?.array.reverse() as unknown as number[];
+    const vertex = cubeGeometry.getAttribute("position").array;
+    for (let i = 0; i < index?.length; i++) {
+        positions.push(new THREE.Vector3(
+            vertex[index[i] * 3] + position.x,
+            vertex[index[i] * 3 + 1] + position.y,
+            vertex[index[i] * 3 + 2] + position.z
+        ));
+        indices.push(positions.length - 1);
+    }
+    cubeGeometry.dispose();
+}
+
 function marchCube(
     position: THREE.Vector3,
     map: any,
     positions: THREE.Vector3[],
     indices: number[],
-    uniquePositions: Map<THREE.Vector3, number>
+    uniquePositions: Map<string, number>,
+	marchingCubes = true,
+    smoothGeometry = false
 ) {
+    const voxelIdCube = map[position.x]?.[position.y]?.[position.z] || 0;
+	if (!marchingCubes && voxelIdCube !== 0) {
+        addCubeFaces(position, positions, indices);
+        return;
+    }
     const cube = [];
     for (let i = 0; i < 8; i++) {
         const voxelPosition = position.clone().add(cornerTable[i]);
         const voxelId = map[voxelPosition.x]?.[voxelPosition.y]?.[voxelPosition.z] || 0;
-        // if (voxelId === undefined) {
-        //     return;
-        // }
         cube[i] = voxelId === 0 ? 0 : 1;
     }
     const configIndex = getConfigIndex(cube);
@@ -53,15 +75,18 @@ function marchCube(
                 difference = (TerrainSurface - vert1Sample) / difference;
             }
             const vertPosition = vert1.clone().add(vert2.clone().sub(vert1).multiplyScalar(difference));
-            if (SmoothNormals) {
-                if (uniquePositions.has(vertPosition)) {
-                    indices.push(uniquePositions.get(vertPosition) as number);
+            if (smoothGeometry) {
+                if (uniquePositions.has(hash(vertPosition))) {
+                    indices.push(uniquePositions.get(hash(vertPosition)) as number);
                 }
                 else {
                     positions.push(vertPosition);
                     indices.push(positions.length - 1);
-                    uniquePositions.set(vertPosition, positions.length - 1);
+                    uniquePositions.set(hash(vertPosition), positions.length - 1);
                 }
+            } else {
+                positions.push(vertPosition);
+                indices.push(positions.length - 1);
             }
             edgeIndex++;
         }

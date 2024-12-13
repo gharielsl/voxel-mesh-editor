@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import MouseEvent3d from "./MouseEvent3d";
+import { state } from "../state";
 
 class MeshObject extends THREE.Mesh {
     clickEvents: Set<(ev: MouseEvent3d) => void> = new Set();
     dragEvents: Set<(ev: MouseEvent3d) => void> = new Set();
     hoverEvents: Set<(ev: MouseEvent3d) => void> = new Set();
     hoverOutEvents: Set<(ev: MouseEvent3d) => void> = new Set();
+    transformEvents: Set<() => void> = new Set();
     selected: boolean = false;
     internal: boolean = false;
     draggable: boolean = false;
@@ -24,6 +26,13 @@ class MeshObject extends THREE.Mesh {
         meshObject.rotation.copy(mesh.rotation);
         meshObject.scale.copy(mesh.scale);
         return meshObject;
+    }
+
+    updateMatrix(): void {
+        super.updateMatrix();
+        this.transformEvents.forEach((callback) => {
+            callback();
+        });
     }
 
     select() {
@@ -50,6 +59,10 @@ class MeshObject extends THREE.Mesh {
         this.hoverOutEvents.add(callback);
     }
 
+    addTransformEvents(callback: () => void) {
+        this.transformEvents.add(callback);
+    }
+
     removeClickListener(callback: (ev: MouseEvent3d) => void) {
         this.clickEvents.delete(callback);
     }
@@ -64,6 +77,10 @@ class MeshObject extends THREE.Mesh {
 
     removeHoverOutEvent(callback: (ev: MouseEvent3d) => void) {
         this.hoverOutEvents.delete(callback);
+    }
+
+    removeTransformEvents(callback: () => void) {
+        this.transformEvents.delete(callback);
     }
 
     invokeClickEvent(event: MouseEvent3d) {
@@ -88,6 +105,16 @@ class MeshObject extends THREE.Mesh {
         this.hoverOutEvents.forEach((callback) => {
             callback(event);
         });
+    }
+
+    public clone() {
+        const copy = super.clone() as any;
+        for (const key of Object.keys(this)) {
+            if (!(key in copy)) {
+                copy[key] = (this as any)[key];
+            }
+        }
+        return copy;
     }
 }
 
