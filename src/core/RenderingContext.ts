@@ -74,6 +74,7 @@ class RenderingContext {
         this.canvasContainer.addEventListener('mouseup', this.handleMouseUp);
         document.addEventListener('keyup', this.handleKeyUp);
         document.addEventListener('keydown', this.handleKeyDown);
+        document.addEventListener('keypress', this.handleKeyPress);
     }
 
     clearEvents = () => {
@@ -83,6 +84,7 @@ class RenderingContext {
         this.canvasContainer.removeEventListener('mouseup', this.handleMouseUp);
         document.removeEventListener('keyup', this.handleKeyUp);
         document.removeEventListener('keydown', this.handleKeyDown);
+        document.removeEventListener('keypress', this.handleKeyPress);
     }
 
     update = () => {
@@ -141,9 +143,16 @@ class RenderingContext {
 
     clipboard: MeshObject[] = [];
 
+    handleKeyPress = (ev: KeyboardEvent) => {
+
+    }
+
     handleKeyDown = (ev: KeyboardEvent) => {
         if (ev.key === 'Control') {
             this.controls.enabled = false;
+        }
+        if (ev.key === 'Tab') {
+            ev.preventDefault();
         }
     }
 
@@ -180,6 +189,21 @@ class RenderingContext {
         }
         if (ev.key === 'Control') {
             this.controls.enabled = true;
+        }
+        if (ev.key === 'Tab') {
+            state.setCurrentMode(state.currentMode === 'object' ? 'sculpt' : 'object');
+        }
+        if (ev.code === 'KeyT' && state.currentMode === 'object') {
+            state.objectModeState = 'move';
+        }
+        if (ev.code === 'KeyR' && state.currentMode === 'object') {
+            state.objectModeState = 'rotate';
+        }
+        if (ev.code === 'KeyG' && state.currentMode === 'object') {
+            state.objectModeState = 'scale';
+        }
+        if (ev.code === 'KeyF' && state.currentMode === 'object') {
+            state.objectModeState = 'select';
         }
     }
 

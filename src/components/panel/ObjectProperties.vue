@@ -128,7 +128,7 @@ export default defineComponent({
                 <h5>March cubes</h5>
                 <input @change="marchCubes" :checked="(state.selectedObject as VoxelMesh).marchCubes" type="checkbox">
             </div>
-            <div v-if="(state.selectedObject as VoxelMesh).marchCubes" class="object-option">
+            <div v-if="(state.selectedObject as VoxelMesh).marchCubes && !(state.selectedObject as VoxelMesh).smoothGeometry" class="object-option">
                 <h5>Smooth normals</h5>
                 <input @change="smoothNormals" :checked="(state.selectedObject as VoxelMesh).smoothNormals" type="checkbox">
             </div>
@@ -140,6 +140,9 @@ export default defineComponent({
     </div>
     <div class="object-options-list" v-else>
         No object selected
+    </div>
+    <div class="object-option-group-title" style="text-align: left;">
+        <h5></h5>
     </div>
 </template>
 
