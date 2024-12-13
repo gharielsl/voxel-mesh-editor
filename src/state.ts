@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import RenderingContext from './core/RenderingContext';
+import MeshObject from './core/MeshObject';
 
 export type SharedState = {
     rotationX: number,
@@ -18,7 +19,9 @@ export type SharedState = {
     setCurrentMode: (mode: string) => void,
     brushSize: number,
     brushShape: string,
-    renderingContext?: RenderingContext
+    renderingContext?: RenderingContext,
+    selectedObject?: MeshObject,
+    multipleSelections: boolean
 }
 
 export const state = reactive<SharedState>({
@@ -37,5 +40,6 @@ export const state = reactive<SharedState>({
     setGridActive: (active: boolean) => {},
     setCurrentMode: (mode: string) => {},
     brushSize: 3,
-    brushShape: 'round'
+    brushShape: 'round',
+    multipleSelections: false
 });

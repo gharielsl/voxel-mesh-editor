@@ -9,6 +9,8 @@ class VoxelMesh extends MeshObject {
     sphere?: THREE.Mesh;
     cube?: THREE.Mesh;
     data: any = { };
+    marchCubes: boolean = true;
+    smoothGeometry: boolean = false;
 
     constructor() {
         super(new THREE.BoxGeometry(0, 0), new THREE.MeshStandardMaterial());
@@ -93,7 +95,7 @@ class VoxelMesh extends MeshObject {
         this.geometry.dispose();
         const positions: THREE.Vector3[] = [];
         const indices: number[] = [];
-        const uniquePositions = new Map<THREE.Vector3, number>();
+        const uniquePositions = new Map<string, number>();
         for (const [x, _] of Object.entries(this.data)) {
             for (const [y, _] of Object.entries(this.data)) {
                 for (const [z, _] of Object.entries(this.data)) {
@@ -114,7 +116,9 @@ class VoxelMesh extends MeshObject {
                         this.data, 
                         positions, 
                         indices, 
-                        uniquePositions
+                        uniquePositions,
+                        this.marchCubes,
+                        this.smoothGeometry
                     );
                 }
             }

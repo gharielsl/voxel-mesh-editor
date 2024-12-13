@@ -37,7 +37,9 @@ class TransformationContext {
         this.scene.scale.x = scale / 35;
         this.scene.scale.y = scale / 35;
         this.scene.scale.z = scale / 35;
+        state.multipleSelections = this.selectedObjects.length > 1;
         if (this.selectedObjects.length > 0) {
+            state.selectedObject = this.selectedObjects[this.selectedObjects.length - 1];
             this.scene.position.set(0, 0, 0);
             this.selectedObjects.forEach((mesh) => {
                 this.scene.position.add(mesh.position);
@@ -47,6 +49,7 @@ class TransformationContext {
             this.setVisible(true);
         } else {
             this.setVisible(false);
+            state.selectedObject = undefined;
             // this.scene.userData.visible = false;
         }
         if (this.rotateMaterialX) {

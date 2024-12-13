@@ -176,7 +176,7 @@ class RenderingContext {
         mouse.x = (x / this.canvas.clientWidth) * 2 - 1;
         mouse.y = -(y / this.canvas.clientHeight) * 2 + 1;
         rc.setFromCamera(mouse, this.camera);
-        const intersects = rc.intersectObjects(this.clickableObjects, true);
+        const intersects = rc.intersectObjects(this.clickableObjects, true).reverse();
         let closestIntersect = intersects[0];
         for (const intersect of intersects) {
             if (!(intersect.object instanceof MeshObject)) {
@@ -189,9 +189,12 @@ class RenderingContext {
                 closestIntersect = intersect;
                 break;
             }
-            if (intersect.distance < closestIntersect.distance || (intersects[0].object as MeshObject).disableMouseEvents) {
-                closestIntersect = intersect;
-            }
+            closestIntersect = intersect;
+            // const distance = intersect.point.distanceTo(this.camera.position);
+            // intersect.distance = distance;
+            // if (intersect.distance < closestIntersect.distance || (intersects[0].object as MeshObject).disableMouseEvents) {
+            //     closestIntersect = intersect;
+            // }
         }
         return closestIntersect;
     }

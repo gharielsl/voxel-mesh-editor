@@ -25,6 +25,7 @@
   --color-text-disabled: #aaa9a9;
 
   color: var(--color-text);
+  user-select: none;
 }
 
 a {
