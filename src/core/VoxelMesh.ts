@@ -97,14 +97,15 @@ class VoxelMesh extends MeshObject {
         const indices: number[] = [];
         const uniquePositions = new Map<string, number>();
         for (const [x, _] of Object.entries(this.data)) {
-            for (const [y, _] of Object.entries(this.data)) {
-                for (const [z, _] of Object.entries(this.data)) {
-                    this.max.x = Math.max(this.max.x, +x);
-                    this.max.y = Math.max(this.max.y, +y);
-                    this.max.z = Math.max(this.max.z, +z);
-                    this.min.x = Math.min(this.min.x, +x);
-                    this.min.y = Math.min(this.min.y, +y);
-                    this.min.z = Math.min(this.min.z, +z);
+            for (const [y, _] of Object.entries(this.data[x])) {
+                for (const [z, _] of Object.entries(this.data[x][y])) {
+                    this.max.x = Math.max(this.max.x, parseInt(x, 10));
+                    this.max.y = Math.max(this.max.y, parseInt(y, 10));
+                    this.max.z = Math.max(this.max.z, parseInt(z, 10));
+
+                    this.min.x = Math.min(this.min.x, parseInt(x, 10));
+                    this.min.y = Math.min(this.min.y, parseInt(y, 10));
+                    this.min.z = Math.min(this.min.z, parseInt(z, 10));
                 }
             }
         }
@@ -138,9 +139,6 @@ class VoxelMesh extends MeshObject {
     setVoxel = (x: number, y: number, z: number, voxel: number) => {
         if (!this.data[x]) this.data[x] = { };
         if (!this.data[x][y]) this.data[x][y] = { };
-        this.max.x = Math.max(this.max.x, x);
-        this.max.y = Math.max(this.max.y, y);
-        this.max.z = Math.max(this.max.z, z);
         this.data[x][y][z] = voxel;
     }
 
