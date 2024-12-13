@@ -2,6 +2,7 @@ import * as THREE from "three";
 import MeshObject from "./MeshObject";
 import { marchCube } from "./marching-cubes/marching-cubes";
 import { state } from "../state";
+import { smoothGeometry } from "./smooth-geometry";
 
 class VoxelMesh extends MeshObject {
     max: THREE.Vector3 = new THREE.Vector3();
@@ -9,7 +10,8 @@ class VoxelMesh extends MeshObject {
     sphere?: THREE.Mesh;
     cube?: THREE.Mesh;
     data: any = { };
-    marchCubes: boolean = true;
+    marchCubes: boolean = false;
+    smoothNormals: boolean = false;
     smoothGeometry: boolean = false;
 
     constructor() {
@@ -47,11 +49,28 @@ class VoxelMesh extends MeshObject {
                 cube.visible = false;
                 return;
             }
-            sphere.scale.setScalar(+state.brushSize + 1);
-            cube.scale.setScalar(state.brushSize * 2 + 1);
+            if (!this.marchCubes) {
+                sphere.scale.setScalar(state.brushSize - 1);
+                cube.scale.setScalar(state.brushSize);
+            } else {
+                sphere.scale.setScalar(state.brushSize + 1);
+                cube.scale.setScalar(state.brushSize * 2 + 1);
+            }
             sphere.visible = state.brushShape === 'round';
             cube.visible = state.brushShape === 'square';
-            let position = ev.intersect.point.clone().floor();
+            let position = ev.intersect.point.clone().addScalar(0.5).floor();
+            if (!this.marchCubes) {
+                if (ev.intersect.normal?.y as number > 0.5) {
+                    position.y--;
+                }
+                if (ev.intersect.normal?.z as number > 0.5) {
+                    position.z--;
+                }
+                if (ev.intersect.normal?.x as number > 0.5) {
+                    position.x--;
+                }
+                position = position.add(ev.intersect.normal?.clone().floor() as THREE.Vector3);
+            }
             position = this.worldToLocal(position);
             sphere.position.copy(position);
             cube.position.copy(position);
@@ -66,15 +85,36 @@ class VoxelMesh extends MeshObject {
 
         this.addClickListener((ev) => {
             if (state.currentMode === 'sculpt') {
-                let point = ev.intersect.point.floor();
+                let point = ev.intersect.point.clone().floor();
+                if (!this.marchCubes) {
+                    point = ev.intersect.point.clone().addScalar(0.5).floor();
+                    if (ev.intersect.normal?.y as number > 0.5) {
+                        point.y--;
+                    }
+                    if (ev.intersect.normal?.z as number > 0.5) {
+                        point.z--;
+                    }
+                    if (ev.intersect.normal?.x as number > 0.5) {
+                        point.x--;
+                    }
+                    point = point.add(ev.intersect.normal?.clone().floor() as THREE.Vector3);
+                }
                 point = this.worldToLocal(point);
-                const brushSize = +state.brushSize + 1;
-                this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1);
+                if (this.marchCubes) {
+                    const brushSize = state.brushSize + 1;
+                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1);
+                } else {
+                    const brushSize = state.brushSize - 1;
+                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1);
+                }
             }
         });
     }
 
     draw = (position: THREE.Vector3, shape: string, size: number, voxel: number) => {
+        if (size === 0) {
+            this.setVoxel(position.x, position.y, position.z, voxel);
+        }
         for (let x = -size; x < size; x++) {
             for (let y = -size; y < size; y++) {
                 for (let z = -size; z < size; z++) {
@@ -96,33 +136,68 @@ class VoxelMesh extends MeshObject {
         const positions: THREE.Vector3[] = [];
         const indices: number[] = [];
         const uniquePositions = new Map<string, number>();
-        for (const [x, _] of Object.entries(this.data)) {
-            for (const [y, _] of Object.entries(this.data[x])) {
-                for (const [z, _] of Object.entries(this.data[x][y])) {
-                    this.max.x = Math.max(this.max.x, parseInt(x, 10));
-                    this.max.y = Math.max(this.max.y, parseInt(y, 10));
-                    this.max.z = Math.max(this.max.z, parseInt(z, 10));
-
-                    this.min.x = Math.min(this.min.x, parseInt(x, 10));
-                    this.min.y = Math.min(this.min.y, parseInt(y, 10));
-                    this.min.z = Math.min(this.min.z, parseInt(z, 10));
+        let voxelCount = 0;
+        for (const [x, X] of Object.entries(this.data)) {
+            let hasX = false;
+            for (const [y, Y] of Object.entries(this.data[x])) {
+                let hasY = false;
+                for (const [z, voxel] of Object.entries(this.data[x][y])) {
+                    const xn = parseInt(x, 10);
+                    const yn = parseInt(y, 10);
+                    const zn = parseInt(z, 10);
+                    this.max.x = Math.max(this.max.x, xn);
+                    this.max.y = Math.max(this.max.y, yn);
+                    this.max.z = Math.max(this.max.z, zn);
+                    this.min.x = Math.min(this.min.x, xn);
+                    this.min.y = Math.min(this.min.y, yn);
+                    this.min.z = Math.min(this.min.z, zn);
+                    if (voxel !== 0) {
+                        voxelCount++;
+                        hasX = true;
+                        hasY = true;
+                    }
+                    if (!this.marchCubes && voxel !== 0) {
+                        marchCube(
+                            new THREE.Vector3(xn, yn, zn), 
+                            this.data, 
+                            positions, 
+                            indices, 
+                            uniquePositions,
+                            false,
+                            false
+                        );
+                    }
+                    if (!voxel) {
+                        delete (Y as any)[z];
+                    }
+                }
+                if (!hasY && (X as any)[y]) {
+                    delete (X as any)[y];
+                }
+            }
+            if (!hasX && this.data[x]) {
+                delete this.data[x];
+            }
+        }
+        if (this.marchCubes) {
+            for (let x = this.min.x - 1; x < this.max.x + 1; x++) {
+                for (let y = this.min.y - 1; y < this.max.y + 1; y++) {
+                    for (let z = this.min.z - 1; z < this.max.z + 1; z++) {
+                        marchCube(
+                            new THREE.Vector3(x, y, z), 
+                            this.data, 
+                            positions, 
+                            indices, 
+                            uniquePositions,
+                            this.marchCubes,
+                            this.smoothNormals || this.smoothGeometry
+                        );
+                    }
                 }
             }
         }
-        for (let x = this.min.x - 1; x < this.max.x + 1; x++) {
-            for (let y = this.min.y - 1; y < this.max.y + 1; y++) {
-                for (let z = this.min.z - 1; z < this.max.z + 1; z++) {
-                    marchCube(
-                        new THREE.Vector3(x, y, z), 
-                        this.data, 
-                        positions, 
-                        indices, 
-                        uniquePositions,
-                        this.marchCubes,
-                        this.smoothGeometry
-                    );
-                }
-            }
+        if (this.smoothGeometry && this.marchCubes) {
+            smoothGeometry(positions, indices);
         }
         const positionsArray = new Float32Array(positions.length * 3);
         for (let i = 0; i < positions.length; i++) {
@@ -134,6 +209,9 @@ class VoxelMesh extends MeshObject {
         this.geometry.setAttribute("position", new THREE.BufferAttribute(positionsArray, 3));
         this.geometry.setIndex(indices.reverse());
         this.geometry.computeVertexNormals();
+        if (voxelCount === 0) {
+            this.draw(new THREE.Vector3(), 'square', 3, 1);
+        }
     }
 
     setVoxel = (x: number, y: number, z: number, voxel: number) => {

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import MouseEvent3d from "./MouseEvent3d";
+import { state } from "../state";
 
 class MeshObject extends THREE.Mesh {
     clickEvents: Set<(ev: MouseEvent3d) => void> = new Set();

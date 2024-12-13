@@ -41,6 +41,11 @@ function marchCube(
 	marchingCubes = true,
     smoothGeometry = false
 ) {
+    const voxelIdCube = map[position.x]?.[position.y]?.[position.z] || 0;
+	if (!marchingCubes && voxelIdCube !== 0) {
+        addCubeFaces(position, positions, indices);
+        return;
+    }
     const cube = [];
     for (let i = 0; i < 8; i++) {
         const voxelPosition = position.clone().add(cornerTable[i]);
@@ -49,10 +54,6 @@ function marchCube(
     }
     const configIndex = getConfigIndex(cube);
     if (configIndex === 0 || configIndex === 255) {
-        return;
-    }
-	if (!marchingCubes) {
-        addCubeFaces(position, positions, indices);
         return;
     }
     let edgeIndex = 0;

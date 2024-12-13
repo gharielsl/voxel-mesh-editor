@@ -14,7 +14,6 @@
         methods: {
             resized() {
                 this.panelHeight = this.panel?.clientHeight || 0;
-                console.log(this.panel?.clientHeight)
             }
         },
         mounted() {

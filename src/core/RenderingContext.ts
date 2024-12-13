@@ -1,6 +1,6 @@
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
 import * as THREE from 'three';
-import { EffectComposer, FXAAShader, OrbitControls, OutlinePass, RenderPass, ShaderPass, GodRaysFakeSunShader } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, FXAAShader, OrbitControls, OutlinePass, RenderPass, ShaderPass, SAOPass } from 'three/examples/jsm/Addons.js';
 import { state } from '../state';
 import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
@@ -24,6 +24,7 @@ class RenderingContext {
     lineX?: THREE.Line;
     lineZ?: THREE.Line;
     ghostLight = new THREE.PointLight(0xffffff, 10, 10000, 0.25);
+    nGhostLight = new THREE.PointLight(0xfff0f0, 2, 10000, 0.25);
     ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     clickableObjects: THREE.Object3D[] = [];
     isMouseDown = [false, false, false, false];
@@ -34,6 +35,7 @@ class RenderingContext {
     renderPass: RenderPass;
     outlinePass?: OutlinePass;
     fxaaPass?: ShaderPass;
+    ssaoPass?: SAOPass;
     topLevel: THREE.Scene;
     lastMouseMove?: MouseEvent;
 
@@ -344,7 +346,10 @@ class RenderingContext {
         this.effectComposter.setSize(w, h);
         this.outlinePass?.setSize(w, h);
         if (this.fxaaPass) {
-            this.fxaaPass.uniforms.resolution.value.set( 1 / this.canvas.width, 1 / this.canvas.height );
+            this.fxaaPass.uniforms.resolution.value.set(1 / this.canvas.width, 1 / this.canvas.height );
+        }
+        if (this.ssaoPass) {
+            this.ssaoPass.resolution = new THREE.Vector2(this.canvas.width, this.canvas.height);
         }
         this.camera.updateProjectionMatrix();
     }
@@ -359,8 +364,15 @@ class RenderingContext {
         this.outlinePass.edgeGlow = 0;
         this.fxaaPass = new ShaderPass(FXAAShader);
         this.fxaaPass.uniforms.resolution.value.set( 1 / this.canvas.width, 1 / this.canvas.height );
+        this.ssaoPass = new SAOPass(this.scene, this.camera, new THREE.Vector2(this.canvas.width, this.canvas.height));
+        this.ssaoPass.params.saoBias = 0.5;
+        this.ssaoPass.params.saoIntensity = 0.02;
+        this.ssaoPass.params.saoScale = 10;
+        this.ssaoPass.params.saoKernelRadius = 8;
+        this.ssaoPass.params.saoMinResolution = 0;
         this.effectComposter.addPass(this.outlinePass);
         this.effectComposter.addPass(this.fxaaPass);
+        // this.effectComposter.addPass(this.ssaoPass);
     }
 
     createControlMeshes = () => {
@@ -418,8 +430,10 @@ class RenderingContext {
                 this.unselectAll();
             }
         }
-        this.ghostLight.position.set(1000, 1000, 1000);
+        this.ghostLight.position.set(1100, 1000, 900);
+        this.nGhostLight.position.set(-900, -1000, -1100);
         this.scene.add(this.ghostLight);
+        this.scene.add(this.nGhostLight);
         this.scene.add(this.ambientLight);
         this.test();
     }
