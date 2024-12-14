@@ -8,6 +8,7 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
 ### Current and future features: 
 - Object mode
     - [x] Copy paste
+    - [x] Transform
     - [ ] Undo
     - [ ] Fly controls
 - Voxel mode
@@ -19,7 +20,10 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
     - [x] March cubes
     - [x] Transform
     - [ ] Voxelify mesh
-- [ ] Materials
+- Materials
+    - [ ] Selection
+    - [ ] Multiple groups
+    - [ ] Voxel mesh shader
 - Import/Export
     - [ ] Save/Open
     - [ ] Import
