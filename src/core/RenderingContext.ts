@@ -40,6 +40,7 @@ class RenderingContext {
     lastMouseMove?: MouseEvent;
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
+        (window as any).renderingContext = this;
         state.renderingContext = this;
         this.canvas = canvas;
         this.canvasContainer = canvasContainer;
@@ -49,6 +50,7 @@ class RenderingContext {
         });
         this.effectComposter = new EffectComposer(this.renderer);
         this.scene = new THREE.Scene();
+        this.scene.userData.isRootScene = true;
         this.topLevel = new THREE.Scene();
         this.topLevel.add(new THREE.AmbientLight(0xffffff, 1));
         this.camera = new THREE.PerspectiveCamera(70, 1, NEAR, FAR);
@@ -143,8 +145,32 @@ class RenderingContext {
 
     clipboard: MeshObject[] = [];
 
-    handleKeyPress = (ev: KeyboardEvent) => {
+    copy = () => {
+        this.clipboard = [];
+        TransformationContext.INSTANCE.selectedObjects.forEach((o) => {
+            if (!this.clipboard.includes(o)) {
+                this.clipboard.push(o);
+            }
+        });
+    }
 
+    paste = () => {
+        this.unselectAll();
+        this.clipboard.forEach((o) => {
+            const copy = o.clone();
+            this.scene.add(copy);
+            this.clickableObjects.push(copy);
+            this
+            TransformationContext.INSTANCE.selectedObjects.push(copy);
+            copy.select();
+        });
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+        }
+    }
+
+    handleKeyPress = (ev: KeyboardEvent) => {
+        
     }
 
     handleKeyDown = (ev: KeyboardEvent) => {
@@ -168,24 +194,10 @@ class RenderingContext {
             TransformationContext.INSTANCE.selectedObjects = [];
         }
         if (ev.code === 'KeyV' && ev.ctrlKey) {
-            this.unselectAll();
-            this.clipboard.forEach((o) => {
-                const copy = o.clone();
-                this.scene.add(copy);
-                this.clickableObjects.push(copy);
-                this
-                TransformationContext.INSTANCE.selectedObjects.push(copy);
-                copy.select();
-            });
-            if (this.outlinePass) {
-                this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
-            }
+            this.paste();
         }
         if (ev.code === 'KeyC' && ev.ctrlKey) {
-            this.clipboard = [];
-            TransformationContext.INSTANCE.selectedObjects.forEach((o) => {
-                this.clipboard.push(o);
-            });
+            this.copy();
         }
         if (ev.key === 'Control') {
             this.controls.enabled = true;

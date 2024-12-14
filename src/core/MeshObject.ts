@@ -13,6 +13,7 @@ class MeshObject extends THREE.Mesh {
     draggable: boolean = false;
     hover = false;
     disableMouseEvents: boolean = false;
+    isMeshObject = true;
 
     constructor(geometry: THREE.BufferGeometry, material: THREE.Material | THREE.Material[]) {
         super(geometry, material);

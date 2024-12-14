@@ -48,7 +48,8 @@ import TransformationContext from '../../core/TransformationContext';
             return {
                 mouseInFile: false,
                 mouseInEdit: false,
-                mouseInAdd: false
+                mouseInAdd: false,
+                state
             }
         }
     });
@@ -62,9 +63,10 @@ import TransformationContext from '../../core/TransformationContext';
                     File
                 </div>
                 <div v-if="mouseInFile" class="menu-list">
-                    <div class="menu-list-item">AAA</div>
-                    <div class="menu-list-item">AAA</div>
-                    <div class="menu-list-item">AAA</div>
+                    <div class="menu-list-item">Open</div>
+                    <div class="menu-list-item">Save</div>
+                    <div class="menu-list-item">Import</div>
+                    <div class="menu-list-item">Export</div>
                 </div>
             </div>
             <div @mouseenter="mouseIn('mouseInEdit')" @mouseleave="mouseOut('mouseInEdit')" class="menu-item">
@@ -72,9 +74,8 @@ import TransformationContext from '../../core/TransformationContext';
                     Edit
                 </div>
                 <div v-if="mouseInEdit" class="menu-list">
-                    <div class="menu-list-item">AAA</div>
-                    <div class="menu-list-item">AAA</div>
-                    <div class="menu-list-item">AAA</div>
+                    <div @click="state.renderingContext?.copy();mouseInEdit = false" class="menu-list-item">Copy (Ctrl + C)</div>
+                    <div @click="state.renderingContext?.paste();mouseInEdit = false" class="menu-list-item">Paste (Ctrl + v)</div>
                 </div>
             </div>
             <div @mouseenter="mouseIn('mouseInAdd')" @mouseleave="mouseOut('mouseInAdd')" class="menu-item">

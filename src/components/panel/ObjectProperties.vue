@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as THREE from "three";
-import { defineComponent } from 'vue';
+import { defineComponent, nextTick } from 'vue';
 import { state } from '../../state';
 import VoxelMesh from '../../core/VoxelMesh';
 import NumberInput from '../input/NumberInput.vue';
@@ -47,6 +47,15 @@ export default defineComponent({
                 state.selectedObject.rotation.y = v.y;
                 state.selectedObject.rotation.z = v.z;
             }
+        },
+        collapse(what: string) {
+            const el = this.$refs[what] as HTMLElement;
+            if ((this as any)[what + 'Open']) {
+                el.style.maxHeight = 0 + 'px';
+            } else {
+                el.style.maxHeight = el.scrollHeight + 'px';
+            }
+            (this as any)[what + 'Open'] = !(this as any)[what + 'Open'];
         }
     },
     mounted() {
@@ -57,10 +66,22 @@ export default defineComponent({
     unmounted() {
         clearInterval(this.interval);
     },
+    updated() {
+        ['position', 'scale', 'rotation', 'voxel'].forEach((i) => {
+            const el = this.$refs[i] as HTMLElement;
+            if (el && el.style && (this as any)[i + 'Open']) {
+                el.style.maxHeight = el.scrollHeight + 'px';
+            }
+        });
+    },
     data() {
         return {
             state,
-            interval: 0
+            interval: 0,
+            positionOpen: true,
+            scaleOpen: true,
+            rotationOpen: true,
+            voxelOpen: true
         }
     }
 });
@@ -72,10 +93,11 @@ export default defineComponent({
     </div>
     <div class="object-options-list" v-else-if="state.selectedObject">
         {{ state.selectedObject.constructor.name }}
-        <div class="object-option-group-title" style="text-align: left;">
-            <h5>Position</h5>
+        <div @click="collapse('position')" class="object-option-group-title" style="text-align: left;">
+            <i :class="{'bi bi-caret-down-fill': positionOpen, 'bi bi-caret-right-fill': !positionOpen}"></i>
+            <h5 style="margin-left: 8px;">Position</h5>
         </div>
-        <div class="object-option-group">
+        <div class="object-option-group" ref="position" :class="{'collapse': !positionOpen}">
             <Vector3Input 
                 :xp="(state.selectedObject as MeshObject).position.x || 0" 
                 :yp="(state.selectedObject as MeshObject).position.y || 0" 
@@ -83,10 +105,11 @@ export default defineComponent({
                 @changeValue="positionChange"
                 />
         </div>
-        <div class="object-option-group-title" style="text-align: left;">
-            <h5>Scale</h5>
+        <div @click="collapse('scale')" class="object-option-group-title" style="text-align: left;">
+            <i :class="{'bi bi-caret-down-fill': scaleOpen, 'bi bi-caret-right-fill': !scaleOpen}"></i>
+            <h5 style="margin-left: 8px;">Scale</h5>
         </div>
-        <div class="object-option-group">
+        <div class="object-option-group" ref="scale" :class="{'collapse': !scaleOpen}">
             <Vector3Input 
                 :xp="(state.selectedObject as MeshObject).scale.x || 0" 
                 :yp="(state.selectedObject as MeshObject).scale.y || 0" 
@@ -94,10 +117,11 @@ export default defineComponent({
                 @changeValue="scaleChange"
                 />
         </div>
-        <div class="object-option-group-title" style="text-align: left;">
-            <h5>Rotation</h5>
+        <div @click="collapse('rotation')" class="object-option-group-title" style="text-align: left;">
+            <i :class="{'bi bi-caret-down-fill': rotationOpen, 'bi bi-caret-right-fill': !rotationOpen}"></i>
+            <h5 style="margin-left: 8px;">Rotation</h5>
         </div>
-        <div class="object-option-group">
+        <div class="object-option-group" ref="rotation" :class="{'collapse': !rotationOpen}">
             <Vector3Input 
                 :xp="(state.selectedObject as MeshObject).rotation.x || 0" 
                 :yp="(state.selectedObject as MeshObject).rotation.y || 0" 
@@ -105,25 +129,12 @@ export default defineComponent({
                 @changeValue="rotationChange"
                 />
         </div>
-        <!-- <div class="object-option-group">
-            <div class="object-option">
-                <h5>X:</h5>
-                <NumberInput @changeValue="positionXChange" unit="m" :value="state.selectedObject.position.x" />
-            </div>
-            <div class="object-option">
-                <h5>Y:</h5>
-                <NumberInput @changeValue="positionYChange" unit="m" :value="state.selectedObject.position.y" />
-            </div>
-            <div class="object-option">
-                <h5>Z:</h5>
-                <NumberInput @changeValue="positionZChange" unit="m" :value="state.selectedObject.position.z" />
-            </div>
-        </div> -->
 
-        <div class="object-option-group-title" style="text-align: left;">
-            <h5>Voxel mesh</h5>
+        <div @click="collapse('voxel')" class="object-option-group-title" style="text-align: left;">
+            <i :class="{'bi bi-caret-down-fill': voxelOpen, 'bi bi-caret-right-fill': !voxelOpen}"></i>
+            <h5 style="margin-left: 8px;">Voxel mesh</h5>
         </div>
-        <div class="object-option-group">
+        <div class="object-option-group" ref="voxel" :class="{'collapse': !voxelOpen}">
             <div v-if="state.selectedObject.constructor.name === 'VoxelMesh'" class="object-option">
                 <h5>March cubes</h5>
                 <input @change="marchCubes" :checked="(state.selectedObject as VoxelMesh).marchCubes" type="checkbox">
@@ -153,14 +164,26 @@ export default defineComponent({
         align-items: center;
     }
     .object-option-group-title {
-        width: 70%;
+        display: flex;
+        align-items: center;
+        width: 90%;
+    }
+    .object-option-group-title:hover {
+        color: var(--color-primary);
+        cursor: pointer;
     }
     .object-option-group {
-        width: 70%;
+        width: 80%;
         padding-left: 8px;
         padding-right: 8px;
         border-radius: 8px;
         background-color: var(--color-foreground-2);
+        transition: max-height 0.3s ease-in-out;
+        overflow: hidden;
+    }
+    .object-option-group.collapse {
+        transition: max-height 0.3s ease-out;
+        max-height: 0;
     }
     .object-options-list {
         margin-top: 8px;
