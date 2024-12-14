@@ -139,6 +139,7 @@ class VoxelMesh extends MeshObject {
         const positions: THREE.Vector3[] = [];
         const indices: number[] = [];
         const uniquePositions = new Map<string, number>();
+        (this.material as any).side = THREE.FrontSide;
         let voxelCount = 0;
         for (const [x, X] of Object.entries(this.data)) {
             let hasX = false;

@@ -54,7 +54,7 @@ export default defineComponent({
             </div>
             <p style="margin: 4px;margin-bottom:0;text-align: left;">Size</p>
             <div style="display: flex;margin-left: 4px;margin-right:4px;align-items: center;">
-                <input @mousemove="inputChange" :value="state.brushSize" :min="1" max="64" class="custom-range" type="range" style="flex: 1">
+                <input @mousemove="inputChange" :value="state.brushSize" :min="1" max="16" class="custom-range" type="range" style="flex: 1">
                 <span style="height:100%;width:18px;text-align:center;color:var(--color-text-disabled)">{{ state.brushSize }}</span>
                 <span style="height:100%;margin-bottom: 0.1em;color:var(--color-text-disabled)">px</span>
             </div>

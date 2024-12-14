@@ -21,7 +21,7 @@ export default defineComponent({
         clearInterval(this.interval);
     },
     methods: {
-        checkChange(item: MeshObject, event: any, isProxy: boolean, hide: boolean) {
+        checkChange(item: THREE.Object3D, event: any, isProxy: boolean, hide: boolean) {
             let itemTarget: MeshObject | undefined;
             if (isProxy) {
                 (window as any).renderingContext?.scene.traverse((child: any) => {
@@ -30,7 +30,7 @@ export default defineComponent({
                     }
                 });
             } else {
-                itemTarget = item;
+                itemTarget = item as MeshObject;
             }
             if (!itemTarget) {
                 return;
@@ -38,14 +38,14 @@ export default defineComponent({
             if (hide && !this.isItemInternal(itemTarget)) {
                 itemTarget.visible = !itemTarget.visible;
             }
-            if (!this.isItemInternal(itemTarget) && event.target.checked && !itemTarget.selected && !hide) {
+            if (itemTarget.isMeshObject && !this.isItemInternal(itemTarget) && event.target.checked && !itemTarget.selected && !hide) {
                 itemTarget.select();
                 TransformationContext.INSTANCE.selectedObjects.push(itemTarget);
                 if (state.renderingContext?.outlinePass) {
                     state.renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                 }
             } 
-            if (!this.isItemInternal(itemTarget) && !event.target.checked && itemTarget.selected && !hide) {
+            if (itemTarget.isMeshObject && !this.isItemInternal(itemTarget) && !event.target.checked && itemTarget.selected && !hide) {
                 itemTarget.unselect();
                 let indexOfMesh = TransformationContext.INSTANCE.selectedObjects.indexOf(itemTarget);
                 if (indexOfMesh !== -1) {
@@ -57,9 +57,7 @@ export default defineComponent({
             }
             if (itemTarget) {
                 itemTarget.children.forEach((child) => {
-                    if (child instanceof MeshObject) {
-                        this.checkChange(child, event, false, hide);
-                    }
+                    this.checkChange(child, event, false, hide);
                 });
             }
         },
@@ -91,9 +89,8 @@ export default defineComponent({
             if (!item) {
                 return true;
             }
-            return (!(item as MeshObject)?.isMeshObject && 
-                !item?.userData.isRootScene) || 
-                (item as MeshObject).internal
+            return (!(item as MeshObject).isMeshObject || (item as MeshObject).internal) && !item.userData.isRootScene;
+            // return (!(item as MeshObject)?.isMeshObject && !item?.userData.isRootScene) || (item as MeshObject).internal
         }
     },
     setup(props) {
