@@ -214,7 +214,7 @@ class VoxelMesh extends MeshObject {
         this.geometry.setIndex(indices.reverse());
         this.geometry.computeVertexNormals();
         if (voxelCount === 0) {
-            this.draw(new THREE.Vector3(), 'square', 3, 1);
+            // this.draw(new THREE.Vector3(), 'square', 3, 1);
         }
     }
 

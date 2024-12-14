@@ -5,7 +5,28 @@ The **Voxel Mesh Editor** is a tool for creating and editing voxel-based 3D mode
 
 It allows to import and voxelify 3D models, sculpt with voxels, and to smooth out voxel meshes.
 
-Additional features: Measuring, First person walk, 3d annotations.
+### Current and future features: 
+- Object mode
+    - [x] Copy paste
+    - [ ] Undo
+    - [ ] Fly controls
+- Voxel mode
+    - [x] Add/Remove
+    - [x] Spray
+    - [ ] Select
+- Scene tree and property editor
+    - [x] Hide/Show/Select
+    - [x] March cubes
+    - [x] Transform
+    - [ ] Voxelify mesh
+- [ ] Materials
+- Import/Export
+    - [ ] Save/Open
+    - [ ] Import
+- Misc
+    - [ ] Measuring
+    - [ ] First person walk
+    - [ ] 3d annotations
 
 ## Controls
 
