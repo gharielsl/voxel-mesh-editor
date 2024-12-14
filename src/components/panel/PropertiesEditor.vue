@@ -61,11 +61,12 @@
 
 <style scoped>
     .properties-panel {
-        height: calc(100% - 2px);
+        height: calc(100vh - 35px);
         width: 256px;
         background-color: var(--color-background);
         display: flex;
         flex-direction: column;
         border: 1px var(--color-foreground-2) solid;
+        overflow: hidden;
     }
 </style>

@@ -283,7 +283,7 @@ class TransformationContext {
                         if (dotProduct < 0.0) {
                             discard;
                         }
-                        gl_FragColor = vec4(color.xyz, 1.0);
+                        gl_FragColor = vec4(color.xyz / 1.5, 1.0);
                     }
                     `,
                     uniforms: {

@@ -59,7 +59,7 @@
                 <div class="mode-bar-item-select">
                     <div @click="state.setCurrentMode('sculpt')" class="mode-button" :style="state.currentMode === 'sculpt' ? 'background-color: var(--color-secondary);' : ''">
                         <i class="bi bi-hammer"></i>
-                        Sculpt Mode
+                        Voxel Mode
                     </div>
                 </div>
             </div>

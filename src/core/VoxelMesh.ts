@@ -51,8 +51,8 @@ class VoxelMesh extends MeshObject {
                 return;
             }
             if (!this.marchCubes) {
-                sphere.scale.setScalar(state.brushSize - 1);
-                cube.scale.setScalar(state.brushSize);
+                sphere.scale.setScalar(state.brushSize + 2);
+                cube.scale.setScalar(state.brushSize === 1 ? 1 : ((state.brushSize - 1) * 2));
             } else {
                 sphere.scale.setScalar(state.brushSize + 1);
                 cube.scale.setScalar(state.brushSize * 2 + 1);
@@ -60,12 +60,16 @@ class VoxelMesh extends MeshObject {
             sphere.visible = state.brushShape === 'round';
             cube.visible = state.brushShape === 'square';
             let position = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
+            if (state.brushShape === 'square' && state.brushSize > 1) {
+                position = position.subScalar(0.5);
+            }
             position = this.worldToLocal(position);
             sphere.position.copy(position);
             cube.position.copy(position);
             const isAnyDown = state.isMouseDown[0] || state.isMouseDown[2];
             const isBothDown = state.isMouseDown[0] && state.isMouseDown[2];
             if (isAnyDown && ev.ctrlKey && !isBothDown && (Date.now() - this.lastDragTime > 100)) {
+                position = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
                 if (state.isMouseDown[2]) {
                     position = position.add(ev.intersect.normal?.clone().ceil().multiplyScalar(-1) as THREE.Vector3);
                 }
@@ -108,6 +112,9 @@ class VoxelMesh extends MeshObject {
     }
 
     draw = (position: THREE.Vector3, shape: string, size: number, voxel: number) => {
+        if (!this.marchCubes && shape === 'round') {
+            size += 3;
+        }
         if (size === 0) {
             this.setVoxel(position.x, position.y, position.z, voxel);
         }
@@ -132,6 +139,7 @@ class VoxelMesh extends MeshObject {
         const positions: THREE.Vector3[] = [];
         const indices: number[] = [];
         const uniquePositions = new Map<string, number>();
+        (this.material as any).side = THREE.FrontSide;
         let voxelCount = 0;
         for (const [x, X] of Object.entries(this.data)) {
             let hasX = false;
@@ -206,7 +214,7 @@ class VoxelMesh extends MeshObject {
         this.geometry.setIndex(indices.reverse());
         this.geometry.computeVertexNormals();
         if (voxelCount === 0) {
-            this.draw(new THREE.Vector3(), 'square', 3, 1);
+            // this.draw(new THREE.Vector3(), 'square', 3, 1);
         }
     }
 

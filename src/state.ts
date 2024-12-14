@@ -23,7 +23,8 @@ export type SharedState = {
     selectedObject?: MeshObject,
     multipleSelections: boolean,
     objectTransformChange: (object: MeshObject) => void,
-    isMouseDown: boolean[]
+    isMouseDown: boolean[],
+    treeShowInternal: boolean
 }
 
 export const state = reactive<SharedState>({
@@ -45,5 +46,6 @@ export const state = reactive<SharedState>({
     brushShape: 'square',
     multipleSelections: false,
     objectTransformChange: () => {},
-    isMouseDown: [false, false, false, false]
+    isMouseDown: [false, false, false, false],
+    treeShowInternal: false
 });
