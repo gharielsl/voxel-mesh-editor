@@ -35,25 +35,25 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
 ## Controls
 
 ### General
-- **Wheel Mouse Button + Drag**: Orbit.
-- **Left Mouse Button + Drag**: Fly.
-- **Left Mouse Button + WASD**: Fly - move.
-- **Right Mouse Button + Drag**: Span.
-- **Tab**: Switch between object mode and voxel mode.
+- <kbd>Wheel Mouse Button</kbd> + <kbd>Drag</kbd>: Orbit.
+- <kbd>Left Mouse Button</kbd> + <kbd>Drag</kbd>: Fly.
+- <kbd>Left Mouse Button</kbd> + <kbd>W</kbd>  <kbd>A</kbd>  <kbd>S</kbd>  <kbd>D</kbd>: Fly - move.
+- <kbd>Right Mouse Button</kbd> + <kbd>Drag</kbd>: Span.
+- <kbd>Tab</kbd>: Switch between object mode and voxel mode.
 
 ### Object Mode
-- **T**: Translate.
-- **R**: Rotate.
-- **G**: Scale.
-- **F**: Select.
-- **Delete**: Delete selected objects.
-- **Ctrl + C**: Copy selected objects.
-- **Ctrl + V**: Paste the copied object.
+- <kbd>T</kbd>: Translate.
+- <kbd>R</kbd>: Rotate.
+- <kbd>G</kbd>: Scale.
+- <kbd>F</kbd>: Select.
+- <kbd>Del</kbd>: Delete selected objects.
+- <kbd>Ctrl</kbd> + <kbd>C</kbd>: Copy selected objects.
+- <kbd>Ctrl</kbd> + <kbd>V</kbd>: Paste the copied object.
 
 ### Voxel Mode
-- **Left Click**: Add a voxel.
-- **Right Click**: Remove a voxel.
-- **Ctrl + Drag**: Spray voxels.
+- <kbd>Left Click</kbd>: Add a voxel.
+- <kbd>Right Click</kbd>: Remove a voxel.
+- <kbd>Ctrl</kbd> + <kbd>Drag</kbd>: Spray voxels.
 
 ## Voxelifying Imported Mesh
 - On the menu bar select `File`.

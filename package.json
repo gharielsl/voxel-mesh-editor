@@ -13,6 +13,7 @@
     "splitpanes": "^3.1.5",
     "three": "^0.169.0",
     "tween": "^0.9.0",
+    "urljoin": "^0.1.5",
     "vue": "^3.4.21",
     "vue-multiselect": "^3.0.0"
   },

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import urljoin from "urljoin";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
 import MeshObject from "./MeshObject";
 import { state } from "../state";
@@ -96,7 +97,7 @@ class TransformationContext {
 
     constructor() {
         const loader = new GLTFLoader();
-        loader.load('/mesh/translate_mesh.glb', (gltf) => {
+        loader.load(state.baseUrl + '/mesh/translate_mesh.glb', (gltf) => {
             const children = [...gltf.scene.children];
             children.forEach((child) => {
                 let mesh = child as MeshObject;
@@ -174,8 +175,7 @@ class TransformationContext {
             });
         }, () => { }, console.error);
 
-
-        loader.load('/mesh/scale_mesh.glb', (gltf) => {
+        loader.load(state.baseUrl + '/mesh/scale_mesh.glb', (gltf) => {
             const children = [...gltf.scene.children];
             children.forEach((child) => {
                 let mesh = child as MeshObject;
@@ -256,7 +256,7 @@ class TransformationContext {
             });
         }, () => { }, console.error);
 
-        loader.load('/mesh/rotate_mesh.glb', (gltf) => {
+        loader.load(state.baseUrl + '/mesh/rotate_mesh.glb', (gltf) => {
             const children = [...gltf.scene.children];
 
             const createRotateShader = (color: THREE.Color) => {
