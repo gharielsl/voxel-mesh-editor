@@ -9,7 +9,7 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
 - Object mode
     - [x] Copy paste
     - [x] Transform
-    - [ ] Undo
+    - [x] Undo
     - [ ] Fly controls
 - Voxel mode
     - [x] Add/Remove
