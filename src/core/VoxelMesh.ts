@@ -15,6 +15,10 @@ class VoxelMesh extends MeshObject {
     smoothGeometry: boolean = false;
     lastDragTime = 0;
     isVoxelMesh = true;
+    isSelecting = false;
+    selectFirstPosition?: THREE.Vector3;
+    selectSecondPosition?: THREE.Vector3;
+    selectButton?: number;
 
     constructor() {
         super(new THREE.BoxGeometry(0, 0), new THREE.MeshStandardMaterial());
@@ -54,6 +58,7 @@ class VoxelMesh extends MeshObject {
             if (!this.marchCubes) {
                 sphere.scale.setScalar(state.brushSize + 2);
                 cube.scale.setScalar(state.brushSize === 1 ? 1 : ((state.brushSize - 1) * 2));
+                cube.scale.addScalar(0.01);
             } else {
                 sphere.scale.setScalar(state.brushSize + 1);
                 cube.scale.setScalar(state.brushSize * 2 + 1);
@@ -70,10 +75,10 @@ class VoxelMesh extends MeshObject {
             const isAnyDown = state.isMouseDown[0] || state.isMouseDown[2];
             const isBothDown = state.isMouseDown[0] && state.isMouseDown[2];
             if (isAnyDown && ev.ctrlKey && !isBothDown && (Date.now() - this.lastDragTime > 100)) {
-                position = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
                 if (state.isMouseDown[2]) {
                     position = position.add(ev.intersect.normal?.clone().ceil().multiplyScalar(-1) as THREE.Vector3);
                 }
+                position = this.worldToLocal(position);
                 if (this.marchCubes) {
                     const brushSize = state.brushSize + 1;
                     this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1);
@@ -82,8 +87,38 @@ class VoxelMesh extends MeshObject {
                     this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1);
                 }
                 this.lastDragTime = Date.now();
+            } else if (this.isSelecting && this.selectFirstPosition) {
+                sphere.visible = false;
+                cube.visible = true;
+                const p1 = this.selectFirstPosition;
+                const p2 = position;
+                let size = new THREE.Vector3().subVectors(p2, p1);
+                size = new THREE.Vector3(
+                    Math.abs(size.x),
+                    Math.abs(size.y),
+                    Math.abs(size.z)
+                )
+                const center = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+                cube.scale.set(size.x + 1.01, size.y + 1.01, size.z + 1.01);
+                cube.position.copy(center);
+                if (this.selectButton === 2) {
+                    position = position.add(ev.intersect.normal?.clone().ceil().multiplyScalar(-1) as THREE.Vector3);
+                }
+                this.selectSecondPosition = position;
             }
         });
+
+        this.addMouseDownEvent((ev) => {
+            if (ev.altKey) {
+                this.selectButton = ev.button;
+                this.isSelecting = true;
+                let position = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
+                position = this.worldToLocal(position);
+                this.selectFirstPosition = position;
+            }
+        });
+
+        document.addEventListener('mouseup', this.mouseUp);
 
         this.addHoverOutEvent(() => {
             const sphere = this.sphere as THREE.Mesh;
@@ -110,6 +145,30 @@ class VoxelMesh extends MeshObject {
                 }
             }
         });
+    }
+
+    mouseUp = (ev: MouseEvent) => {
+        this.isSelecting = false;
+        if (this.selectFirstPosition && this.selectSecondPosition) {
+            const min = new THREE.Vector3(
+                Math.min(this.selectFirstPosition.x, this.selectSecondPosition.x),
+                Math.min(this.selectFirstPosition.y, this.selectSecondPosition.y),
+                Math.min(this.selectFirstPosition.z, this.selectSecondPosition.z),
+            );
+            const max = new THREE.Vector3(
+                Math.max(this.selectFirstPosition.x, this.selectSecondPosition.x),
+                Math.max(this.selectFirstPosition.y, this.selectSecondPosition.y),
+                Math.max(this.selectFirstPosition.z, this.selectSecondPosition.z),
+            );
+            for (let x = min.x; x <= max.x; x++) {
+                for (let y = min.y; y <= max.y; y++) {
+                    for (let z = min.z; z <= max.z; z++) {
+                        this.setVoxel(x, y, z, this.selectButton === 2 ? 0 : 1);
+                    }
+                }
+            }
+            this.update();
+        }
     }
 
     draw = (position: THREE.Vector3, shape: string, size: number, voxel: number) => {
@@ -217,6 +276,11 @@ class VoxelMesh extends MeshObject {
         if (voxelCount === 0) {
             // this.draw(new THREE.Vector3(), 'square', 3, 1);
         }
+    }
+
+    public destoy(): void {
+        super.destoy();
+        document.removeEventListener('mouseup', this.mouseUp);
     }
 
     setVoxel = (x: number, y: number, z: number, voxel: number) => {

@@ -17,11 +17,11 @@ import { state } from '../../state';
                 this.panelHeight = this.panel?.clientHeight || 0;
                 const properties = (this.$refs.properties as any)?.$el as HTMLElement;
                 if (properties) {
-                    if ((document.getElementById('editor-canvas') as HTMLCanvasElement).width < 800) {
-                        properties.style.minWidth = (window.innerWidth - 800) + 'px';
+                    if ((document.getElementById('editor-canvas') as HTMLCanvasElement).width < 864) {
+                        properties.style.width = (window.innerWidth - 864) + 'px';
                     }
-                    if (+properties.style.minWidth.replace('px', '') < 256) {
-                        properties.style.minWidth = '256px';
+                    if (+properties.style.width.replace('px', '') < 256) {
+                        properties.style.width = '256px';
                     }
                 }
             },
@@ -30,10 +30,10 @@ import { state } from '../../state';
                     state.cursorShape = 'col-resize';
                     const properties = (this.$refs.properties as any)?.$el as HTMLElement;
                     if (properties) {
-                        properties.style.minWidth = (+properties.style.minWidth.replace('px', '') - ev.movementX) + 'px';
+                        properties.style.width = (+properties.style.width.replace('px', '') - ev.movementX) + 'px';
                     }
-                    if (+properties.style.minWidth.replace('px', '') < 256) {
-                        properties.style.minWidth = '256px';
+                    if (+properties.style.width.replace('px', '') < 256) {
+                        properties.style.width = '256px';
                     }
                 }
             },

@@ -38,6 +38,8 @@ class RenderingContext {
     ssaoPass?: SAOPass;
     topLevel: THREE.Scene;
     lastMouseMove?: MouseEvent;
+    isDraggingObject = false;
+    pressed = new Set();
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
         (window as any).renderingContext = this;
@@ -77,6 +79,7 @@ class RenderingContext {
         document.addEventListener('keyup', this.handleKeyUp);
         document.addEventListener('keydown', this.handleKeyDown);
         document.addEventListener('keypress', this.handleKeyPress);
+        this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     }
 
     clearEvents = () => {
@@ -87,6 +90,7 @@ class RenderingContext {
         document.removeEventListener('keyup', this.handleKeyUp);
         document.removeEventListener('keydown', this.handleKeyDown);
         document.removeEventListener('keypress', this.handleKeyPress);
+        this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
     }
 
     update = () => {
@@ -183,12 +187,21 @@ class RenderingContext {
         }
     }
 
+    shouldControlsBeOn = () => {
+        return !this.pressed.has('Control') && !this.pressed.has('Alt') && !this.isDraggingObject;
+    }
+
+    handleContextMenu = (ev: Event) => {
+        ev.preventDefault();
+    }
+
     handleKeyPress = (ev: KeyboardEvent) => {
         
     }
 
     handleKeyDown = (ev: KeyboardEvent) => {
-        if (ev.key === 'Control') {
+        this.pressed.add(ev.key);
+        if (ev.key === 'Control' || ev.key === 'Alt') {
             this.controls.enabled = false;
         }
         if (ev.key === 'Tab') {
@@ -197,13 +210,17 @@ class RenderingContext {
     }
 
     handleKeyUp = (ev: KeyboardEvent) => {
+        this.pressed.delete(ev.key);
+        if (ev.ctrlKey) {
+            ev.preventDefault();
+        }
         if (ev.code === 'Delete') {
             TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
                 const index = this.clickableObjects.indexOf(mesh);
                 if (index > -1) {
                     this.clickableObjects.splice(index, 1);
                 }
-                this.scene.remove(mesh);
+                mesh.destoy();
             });
             TransformationContext.INSTANCE.selectedObjects = [];
         }
@@ -213,9 +230,7 @@ class RenderingContext {
         if (ev.code === 'KeyC' && ev.ctrlKey) {
             this.copy();
         }
-        if (ev.key === 'Control') {
-            this.controls.enabled = true;
-        }
+        this.controls.enabled = this.shouldControlsBeOn();
         if (ev.key === 'Tab') {
             state.setCurrentMode(state.currentMode === 'object' ? 'sculpt' : 'object');
         }
@@ -281,8 +296,10 @@ class RenderingContext {
         this.lastMeshIntersect = ev3d;
         this.lastMeshIntersect.isFirstMovement = true;
         const object = (closestIntersect.object as MeshObject);
+        object.invokeMouseDownEvent(ev3d);
         if (object.draggable) {
             this.controls.enabled = false;
+            this.isDraggingObject = true;
         }
     }
 
@@ -317,7 +334,8 @@ class RenderingContext {
         this.isMouseDown[ev.button] = false;
         state.isMouseDown[ev.button] = false;
         this.isDragging[ev.button] = false;
-        this.controls.enabled = true;
+        this.isDraggingObject = false;
+        this.controls.enabled = this.shouldControlsBeOn();
     }
 
     handleMouseMove = (ev: MouseEvent) => {
