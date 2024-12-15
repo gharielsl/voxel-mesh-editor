@@ -79,6 +79,7 @@ class RenderingContext {
         document.addEventListener('keyup', this.handleKeyUp);
         document.addEventListener('keydown', this.handleKeyDown);
         document.addEventListener('keypress', this.handleKeyPress);
+        window.addEventListener('blur', this.handleBlur);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     }
 
@@ -90,11 +91,13 @@ class RenderingContext {
         document.removeEventListener('keyup', this.handleKeyUp);
         document.removeEventListener('keydown', this.handleKeyDown);
         document.removeEventListener('keypress', this.handleKeyPress);
+        window.removeEventListener('blur', this.handleBlur);
         this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
     }
 
     update = () => {
         const delta = this.clock.getDelta();
+        this.controls.enabled = this.shouldControlsBeOn();
         if (this.lastMouseMove) {
             let hover = this.intersectObject(this.lastMouseMove.offsetX, this.lastMouseMove.offsetY);
             this.clickableObjects.forEach((mesh) => {
@@ -191,6 +194,14 @@ class RenderingContext {
         return !this.pressed.has('Control') && !this.pressed.has('Alt') && !this.isDraggingObject;
     }
 
+    handleBlur = () => {
+        this.pressed.clear();
+        this.isMouseDown = [false, false, false, false];
+        this.isDraggingObject = false;
+        this.isDragging = [false, false, false, false];
+        state.isMouseDown = this.isMouseDown;
+    }
+
     handleContextMenu = (ev: Event) => {
         ev.preventDefault();
     }
@@ -202,7 +213,7 @@ class RenderingContext {
     handleKeyDown = (ev: KeyboardEvent) => {
         this.pressed.add(ev.key);
         if (ev.key === 'Control' || ev.key === 'Alt') {
-            this.controls.enabled = false;
+            // this.controls.enabled = false;
         }
         if (ev.key === 'Tab') {
             ev.preventDefault();
@@ -230,7 +241,7 @@ class RenderingContext {
         if (ev.code === 'KeyC' && ev.ctrlKey) {
             this.copy();
         }
-        this.controls.enabled = this.shouldControlsBeOn();
+        // this.controls.enabled = this.shouldControlsBeOn();
         if (ev.key === 'Tab') {
             state.setCurrentMode(state.currentMode === 'object' ? 'sculpt' : 'object');
         }
@@ -298,7 +309,7 @@ class RenderingContext {
         const object = (closestIntersect.object as MeshObject);
         object.invokeMouseDownEvent(ev3d);
         if (object.draggable) {
-            this.controls.enabled = false;
+            // this.controls.enabled = false;
             this.isDraggingObject = true;
         }
     }
