@@ -25,7 +25,8 @@ export type SharedState = {
     objectTransformChange: (object: MeshObject) => void,
     isMouseDown: boolean[],
     treeShowInternal: boolean,
-    baseUrl: '/voxel-mesh-editor'
+    baseUrl: '/voxel-mesh-editor',
+    cursorShape: string
 }
 
 export const state = reactive<SharedState>({
@@ -49,5 +50,6 @@ export const state = reactive<SharedState>({
     objectTransformChange: () => {},
     isMouseDown: [false, false, false, false],
     treeShowInternal: false,
-    baseUrl: '/voxel-mesh-editor'
+    baseUrl: '/voxel-mesh-editor',
+    cursorShape: 'initial'
 });
