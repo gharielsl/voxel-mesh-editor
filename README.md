@@ -9,12 +9,12 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
 - Object mode
     - [x] Copy paste
     - [x] Transform
-    - [ ] Undo
+    - [x] Undo
     - [ ] Fly controls
 - Voxel mode
     - [x] Add/Remove
     - [x] Spray
-    - [ ] Select
+    - [x] Select
 - Scene tree and property editor
     - [x] Hide/Show/Select
     - [x] March cubes
@@ -26,7 +26,7 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
     - [ ] Voxel mesh shader
 - Import/Export
     - [ ] Save/Open
-    - [ ] Import
+    - [x] Import
 - Misc
     - [ ] Measuring
     - [ ] First person walk
@@ -54,6 +54,7 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
 - <kbd>Left Click</kbd>: Add a voxel.
 - <kbd>Right Click</kbd>: Remove a voxel.
 - <kbd>Ctrl</kbd> + <kbd>Drag</kbd>: Spray voxels.
+- <kbd>Alt</kbd> + <kbd>Drag</kbd>: Select voxels.
 
 ## Voxelifying Imported Mesh
 - On the menu bar select `File`.

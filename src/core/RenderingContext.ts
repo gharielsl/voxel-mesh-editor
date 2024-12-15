@@ -38,10 +38,14 @@ class RenderingContext {
     ssaoPass?: SAOPass;
     topLevel: THREE.Scene;
     lastMouseMove?: MouseEvent;
+    isDraggingObject = false;
+    pressed = new Set();
+    actions: { in: () => boolean, out?: () => void }[] = [];
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
         (window as any).renderingContext = this;
-        state.renderingContext = this;
+        state.renderingContextProxy = this;
+        state.pushAction = this.pushAction;
         this.canvas = canvas;
         this.canvasContainer = canvasContainer;
         this.renderer = new THREE.WebGLRenderer({
@@ -77,6 +81,8 @@ class RenderingContext {
         document.addEventListener('keyup', this.handleKeyUp);
         document.addEventListener('keydown', this.handleKeyDown);
         document.addEventListener('keypress', this.handleKeyPress);
+        window.addEventListener('blur', this.handleBlur);
+        this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     }
 
     clearEvents = () => {
@@ -87,10 +93,20 @@ class RenderingContext {
         document.removeEventListener('keyup', this.handleKeyUp);
         document.removeEventListener('keydown', this.handleKeyDown);
         document.removeEventListener('keypress', this.handleKeyPress);
+        window.removeEventListener('blur', this.handleBlur);
+        this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
+    }
+
+    pushAction = (action: { in: () => boolean, out?: () => void }) => {
+        if (this.actions.length === 10) {
+            this.actions.shift()?.out?.();
+        }
+        this.actions.push(action);
     }
 
     update = () => {
         const delta = this.clock.getDelta();
+        this.controls.enabled = this.shouldControlsBeOn();
         if (this.lastMouseMove) {
             let hover = this.intersectObject(this.lastMouseMove.offsetX, this.lastMouseMove.offsetY);
             this.clickableObjects.forEach((mesh) => {
@@ -143,6 +159,20 @@ class RenderingContext {
         }
     }
 
+    selectObjects = (objects: MeshObject[]) => {
+        objects.forEach((object) => {
+            if (!object.selected) {
+                object.select();
+            }
+            if (!TransformationContext.INSTANCE.selectedObjects.includes(object)) {
+                TransformationContext.INSTANCE.selectedObjects.push(object);
+            }
+        })
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+        }
+    }
+
     clipboard: MeshObject[] = [];
 
     copy = () => {
@@ -160,13 +190,67 @@ class RenderingContext {
             const copy = o.clone();
             this.scene.add(copy);
             this.clickableObjects.push(copy);
-            this
             TransformationContext.INSTANCE.selectedObjects.push(copy);
             copy.select();
+            state.pushAction({
+                in: () => {
+                    this.deleteObjects([copy]);
+                    return false;
+                }
+            });
         });
         if (this.outlinePass) {
             this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
         }
+    }
+
+    undo = () => {
+        const action = this.actions.pop();
+        if (!action) {
+            return;
+        }
+        if (action.in()) {
+            action.out?.();
+        }
+    }
+
+    deleteObjects = (objects: MeshObject[]) => {
+        const toRemove: MeshObject[] = [];
+        objects.forEach((mesh) => {
+            toRemove.push(mesh);
+            mesh.destoy();
+        });
+
+        toRemove.forEach((mesh) => {
+            const index = this.clickableObjects.indexOf(mesh);
+            const index1 = TransformationContext.INSTANCE.selectedObjects.indexOf(mesh);
+            if (index > -1) {
+                this.clickableObjects.splice(index, 1);
+            }
+            if (index1 > -1) {
+                TransformationContext.INSTANCE.selectedObjects.splice(index1, 1);
+            }
+        });
+
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+        }
+    }
+
+    shouldControlsBeOn = () => {
+        return !this.pressed.has('Control') && !this.pressed.has('Alt') && !this.isDraggingObject;
+    }
+
+    handleBlur = () => {
+        this.pressed.clear();
+        this.isMouseDown = [false, false, false, false];
+        this.isDraggingObject = false;
+        this.isDragging = [false, false, false, false];
+        state.isMouseDown = this.isMouseDown;
+    }
+
+    handleContextMenu = (ev: Event) => {
+        ev.preventDefault();
     }
 
     handleKeyPress = (ev: KeyboardEvent) => {
@@ -174,24 +258,54 @@ class RenderingContext {
     }
 
     handleKeyDown = (ev: KeyboardEvent) => {
-        if (ev.key === 'Control') {
-            this.controls.enabled = false;
-        }
+        this.pressed.add(ev.key);
         if (ev.key === 'Tab') {
             ev.preventDefault();
         }
     }
 
     handleKeyUp = (ev: KeyboardEvent) => {
+        this.pressed.delete(ev.key);
+        if (ev.ctrlKey) {
+            ev.preventDefault();
+        }
         if (ev.code === 'Delete') {
+            const toRemove: MeshObject[] = [];
             TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
+                toRemove.push(mesh);
+                mesh.userData.parent = mesh.parent;
+                mesh.removeFromParent();
+            });
+            toRemove.forEach((mesh) => {
                 const index = this.clickableObjects.indexOf(mesh);
+                const index1 = TransformationContext.INSTANCE.selectedObjects.indexOf(mesh);
+                mesh.unselect();
                 if (index > -1) {
                     this.clickableObjects.splice(index, 1);
+                    mesh.userData.clickable = true;
+                } else {
+                    mesh.userData.clickable = false;
                 }
-                this.scene.remove(mesh);
+                if (index1 > -1) {
+                    TransformationContext.INSTANCE.selectedObjects.splice(index1, 1);
+                }
             });
-            TransformationContext.INSTANCE.selectedObjects = [];
+            state.pushAction({
+                in: () => {
+                    toRemove.forEach((mesh) => {
+                        mesh.userData.parent?.add(mesh);
+                        if (mesh.userData.clickable) {
+                            this.clickableObjects.push(mesh);
+                        }
+                    });
+                    return false;
+                },
+                out: () => {
+                    toRemove.forEach((mesh) => {
+                        mesh.destoy();
+                    });
+                }
+            });
         }
         if (ev.code === 'KeyV' && ev.ctrlKey) {
             this.paste();
@@ -199,9 +313,10 @@ class RenderingContext {
         if (ev.code === 'KeyC' && ev.ctrlKey) {
             this.copy();
         }
-        if (ev.key === 'Control') {
-            this.controls.enabled = true;
+        if (ev.code === 'KeyZ' && ev.ctrlKey) {
+            this.undo();
         }
+        // this.controls.enabled = this.shouldControlsBeOn();
         if (ev.key === 'Tab') {
             state.setCurrentMode(state.currentMode === 'object' ? 'sculpt' : 'object');
         }
@@ -230,9 +345,9 @@ class RenderingContext {
         const intersects = rc.intersectObjects(this.clickableObjects, true).reverse();
         let closestIntersect = intersects[0];
         for (const intersect of intersects) {
-            if (!(intersect.object instanceof MeshObject)) {
-                continue;
-            }
+            // if (!(intersect.object instanceof MeshObject)) {
+            //     continue;
+            // }
             if ((intersect.object as MeshObject).disableMouseEvents) {
                 continue;
             }
@@ -241,6 +356,9 @@ class RenderingContext {
                 break;
             }
             closestIntersect = intersect;
+            if (closestIntersect.object.userData.meshObject) {
+                closestIntersect.object = closestIntersect.object.userData.meshObject;
+            }
             // const distance = intersect.point.distanceTo(this.camera.position);
             // intersect.distance = distance;
             // if (intersect.distance < closestIntersect.distance || (intersects[0].object as MeshObject).disableMouseEvents) {
@@ -264,8 +382,10 @@ class RenderingContext {
         this.lastMeshIntersect = ev3d;
         this.lastMeshIntersect.isFirstMovement = true;
         const object = (closestIntersect.object as MeshObject);
+        object.invokeMouseDownEvent(ev3d);
         if (object.draggable) {
-            this.controls.enabled = false;
+            // this.controls.enabled = false;
+            this.isDraggingObject = true;
         }
     }
 
@@ -300,7 +420,8 @@ class RenderingContext {
         this.isMouseDown[ev.button] = false;
         state.isMouseDown[ev.button] = false;
         this.isDragging[ev.button] = false;
-        this.controls.enabled = true;
+        this.isDraggingObject = false;
+        this.controls.enabled = this.shouldControlsBeOn();
     }
 
     handleMouseMove = (ev: MouseEvent) => {

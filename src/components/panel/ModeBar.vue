@@ -14,13 +14,25 @@
             resize() {
                 this.space = window.innerWidth < 1200 ? 4 : 8;
                 this.rightVisible = window.innerWidth >= 1045;
+            },
+            fullscreenChange() {
+                state.fullscreen = document.fullscreenElement !== null
+            },
+            fullscreen() {
+                if (!state.fullscreen) {
+                    document.body.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
             }
         },
         mounted() {
             window.addEventListener('resize', this.resize);
+            document.addEventListener('fullscreenchange', this.fullscreenChange);
         },
         unmounted() {
             window.removeEventListener('resize', this.resize);
+            document.removeEventListener('fullscreenchange', this.fullscreenChange);
         },
         data: () => {
             return {
@@ -67,8 +79,15 @@
                 <Brush />
             </div>
         </div>
-        <div v-if="rightVisible" title="snap" class="mode-bar-right">
-            <div class="mode-bar-item">
+        <div v-if="rightVisible" class="mode-bar-right">
+            <div title="fullscreen" class="mode-bar-item">
+                <div class="mode-bar-item-select" style="width: 48px;">
+                    <div @click="fullscreen" class="mode-button" :style="`background-color: var(${state.fullscreen ? '--color-secondary' : '--color-foreground-2'});`">
+                        <i :class="!state.fullscreen ? 'bi bi-fullscreen' : 'bi bi-fullscreen-exit'"></i>
+                    </div>
+                </div>
+            </div>
+            <div title="snap" class="mode-bar-item">
                 <div class="mode-bar-item-select" style="width: 48px;">
                     <div @click="state.snapActive = !state.snapActive" class="mode-button" :style="`background-color: var(${state.snapActive ? '--color-secondary' : '--color-foreground-2'});`">
                         <i class="bi bi-magnet-fill"></i>

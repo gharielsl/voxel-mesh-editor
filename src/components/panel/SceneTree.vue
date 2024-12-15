@@ -22,7 +22,7 @@ export default defineComponent({
             <input @change="state.treeShowInternal = ($event.target as any).checked" type="checkbox">
         </div>
         <div class="scene-tree-list">
-            <SceneTreeItem :default-collapsed="false" :item="state?.renderingContext?.scene" :level="0" :index="0" />
+            <SceneTreeItem :default-collapsed="false" :item="state?.renderingContextProxy?.scene" :level="0" :index="0" />
         </div>
     </div>
 </template>

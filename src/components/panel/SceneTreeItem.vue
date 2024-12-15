@@ -41,8 +41,8 @@ export default defineComponent({
             if (itemTarget.isMeshObject && !this.isItemInternal(itemTarget) && event.target.checked && !itemTarget.selected && !hide) {
                 itemTarget.select();
                 TransformationContext.INSTANCE.selectedObjects.push(itemTarget);
-                if (state.renderingContext?.outlinePass) {
-                    state.renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                if (state.renderingContextProxy?.outlinePass) {
+                    state.renderingContextProxy.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                 }
             } 
             if (itemTarget.isMeshObject && !this.isItemInternal(itemTarget) && !event.target.checked && itemTarget.selected && !hide) {
@@ -50,8 +50,8 @@ export default defineComponent({
                 let indexOfMesh = TransformationContext.INSTANCE.selectedObjects.indexOf(itemTarget);
                 if (indexOfMesh !== -1) {
                     TransformationContext.INSTANCE.selectedObjects.splice(indexOfMesh, 1);
-                    if (state.renderingContext?.outlinePass) {
-                        state.renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                    if (state.renderingContextProxy?.outlinePass) {
+                        state.renderingContextProxy.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                     }
                 }
             }
@@ -127,7 +127,7 @@ export default defineComponent({
                 <div @click="collapsed=!collapsed;" class="title-left">
                     <i :class="{'bi bi-caret-down-fill': !collapsed, 'bi bi-caret-right-fill': collapsed}" :style="`display: ${itemHasChildren(item as MeshObject) ? 'block' : 'none'}`"></i>
                     <div style="margin-left: 4px;">
-                        {{ item?.name || (item as any)?.constructor.name + `<#${item?.id}>` }}
+                        {{ (item?.name || (item as any)?.constructor.name) + `<#${item?.id}>` }}
                     </div>
                 </div>
                 <div class="title-right">

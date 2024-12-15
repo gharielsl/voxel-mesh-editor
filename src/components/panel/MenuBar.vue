@@ -4,6 +4,8 @@
     import { state } from '../../state';
     import VoxelMesh from '../../core/VoxelMesh';
 import TransformationContext from '../../core/TransformationContext';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import MeshObject from '../../core/MeshObject';
 
     export default defineComponent({
         methods: {
@@ -17,13 +19,14 @@ import TransformationContext from '../../core/TransformationContext';
                 const vo = new VoxelMesh();
                 vo.draw(new THREE.Vector3(), 'square', 5, 1);
                 vo.update();
-                state.renderingContext?.clickableObjects.push(vo);
-                state.renderingContext?.scene.add(vo);
+                const renderingContext = state.renderingContext();
+                renderingContext?.clickableObjects.push(vo);
+                renderingContext?.scene.add(vo);
                 if (state.currentMode === 'object') {
                     vo.select();
                     TransformationContext.INSTANCE.selectedObjects.push(vo);
-                    if (state.renderingContext?.outlinePass?.selectedObjects) {
-                        state.renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                    if (renderingContext?.outlinePass?.selectedObjects) {
+                        renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                     }
                 }
                 this.mouseInAdd = false;
@@ -32,16 +35,53 @@ import TransformationContext from '../../core/TransformationContext';
                 const vo = new VoxelMesh();
                 vo.draw(new THREE.Vector3(), 'square', 0, 1);
                 vo.update();
-                state.renderingContext?.clickableObjects.push(vo);
-                state.renderingContext?.scene.add(vo);
+                const renderingContext = state.renderingContext();
+                renderingContext?.clickableObjects.push(vo);
+                renderingContext?.scene.add(vo);
                 if (state.currentMode === 'object') {
                     vo.select();
                     TransformationContext.INSTANCE.selectedObjects.push(vo);
-                    if (state.renderingContext?.outlinePass?.selectedObjects) {
-                        state.renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                    if (renderingContext.outlinePass?.selectedObjects) {
+                        renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                     }
                 }
                 this.mouseInAdd = false;
+            },
+            importFile() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.glb,.gltf';
+                input.multiple = false;
+                input.addEventListener('change', (ev: Event) => {
+                    if (!input.files?.[0]) {
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const loader = new GLTFLoader();
+                        loader.load(reader.result as string, (scene) => {
+                            const meshObject = new MeshObject(new THREE.BoxGeometry(0, 0, 0), new THREE.MeshBasicMaterial());
+                            scene.scene.traverse((child) => {
+                                child.userData.meshObject = meshObject;
+                            });
+                            meshObject.name = 'Imported';
+                            meshObject.add(scene.scene);
+                            const context = state.renderingContext();
+                            if (context) {
+                                context.scene.add(meshObject);
+                                context.clickableObjects.push(meshObject);
+                                context.selectObjects([meshObject]);
+                            }
+                        });
+                    }
+                    reader.onerror = () => {
+                        
+                    }
+                    const file = input.files[0];
+                    reader.readAsDataURL(file);
+                });
+                input.click();
+                this.mouseInFile = false;
             }
         },
         data() {
@@ -63,9 +103,9 @@ import TransformationContext from '../../core/TransformationContext';
                     File
                 </div>
                 <div v-if="mouseInFile" class="menu-list">
-                    <div class="menu-list-item">Open</div>
-                    <div class="menu-list-item">Save</div>
-                    <div class="menu-list-item">Import</div>
+                    <div class="menu-list-item">Open (Ctrl + O)</div>
+                    <div class="menu-list-item">Save (Ctrl + S)</div>
+                    <div @click="importFile" class="menu-list-item">Import GLB/GLTF</div>
                     <div class="menu-list-item">Export</div>
                 </div>
             </div>
@@ -74,8 +114,9 @@ import TransformationContext from '../../core/TransformationContext';
                     Edit
                 </div>
                 <div v-if="mouseInEdit" class="menu-list">
-                    <div @click="state.renderingContext?.copy();mouseInEdit = false" class="menu-list-item">Copy (Ctrl + C)</div>
-                    <div @click="state.renderingContext?.paste();mouseInEdit = false" class="menu-list-item">Paste (Ctrl + v)</div>
+                    <div @click="state.renderingContext()?.copy();mouseInEdit = false" class="menu-list-item">Copy (Ctrl + C)</div>
+                    <div @click="state.renderingContext()?.paste();mouseInEdit = false" class="menu-list-item">Paste (Ctrl + V)</div>
+                    <div @click="state.renderingContext()?.undo();mouseInEdit = false" class="menu-list-item">Undo (Ctrl + Z)</div>
                 </div>
             </div>
             <div @mouseenter="mouseIn('mouseInAdd')" @mouseleave="mouseOut('mouseInAdd')" class="menu-item">
