@@ -14,7 +14,7 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
 - Voxel mode
     - [x] Add/Remove
     - [x] Spray
-    - [ ] Select
+    - [x] Select
 - Scene tree and property editor
     - [x] Hide/Show/Select
     - [x] March cubes
@@ -26,7 +26,7 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
     - [ ] Voxel mesh shader
 - Import/Export
     - [ ] Save/Open
-    - [ ] Import
+    - [x] Import
 - Misc
     - [ ] Measuring
     - [ ] First person walk
