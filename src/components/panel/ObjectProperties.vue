@@ -130,11 +130,11 @@ export default defineComponent({
                 />
         </div>
 
-        <div @click="collapse('voxel')" class="object-option-group-title" style="text-align: left;">
+        <div v-if="(state.selectedObject as VoxelMesh).isVoxelMesh" @click="collapse('voxel')" class="object-option-group-title" style="text-align: left;">
             <i :class="{'bi bi-caret-down-fill': voxelOpen, 'bi bi-caret-right-fill': !voxelOpen}"></i>
             <h5 style="margin-left: 8px;">Voxel mesh</h5>
         </div>
-        <div class="object-option-group" ref="voxel" :class="{'collapse': !voxelOpen}">
+        <div v-if="(state.selectedObject as VoxelMesh).isVoxelMesh" class="object-option-group" ref="voxel" :class="{'collapse': !voxelOpen}">
             <div v-if="state.selectedObject.constructor.name === 'VoxelMesh'" class="object-option">
                 <h5>March cubes</h5>
                 <input @change="marchCubes" :checked="(state.selectedObject as VoxelMesh).marchCubes" type="checkbox">

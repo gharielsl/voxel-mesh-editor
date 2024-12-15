@@ -133,7 +133,7 @@ class TransformationContext {
                     let movement = ev.movement3dXZ.x - ev.movement3dOriginXZ.x;
                     mesh.userData.position.x += movement;
                     if (state.snapActive) {
-                        mesh.position.x = Math.round(mesh.userData.position.x / 10) * 10;
+                        mesh.position.x = Math.round(mesh.userData.position.x / 5) * 5;
                     } else {
                         mesh.position.x = mesh.userData.position.x;
                     }
@@ -150,7 +150,7 @@ class TransformationContext {
                     let movement = ev.movement3dY.y - ev.movement3dOriginY.y;
                     mesh.userData.position.y += movement;
                     if (state.snapActive) {
-                        mesh.position.y = Math.round(mesh.userData.position.y / 10) * 10;
+                        mesh.position.y = Math.round(mesh.userData.position.y / 5) * 5;
                     } else {
                         mesh.position.y = mesh.userData.position.y;
                     }
@@ -167,7 +167,7 @@ class TransformationContext {
                     let movement = ev.movement3dXZ.z - ev.movement3dOriginXZ.z;
                     mesh.userData.position.z += movement;
                     if (state.snapActive) {
-                        mesh.position.z = Math.round(mesh.userData.position.z / 10) * 10;
+                        mesh.position.z = Math.round(mesh.userData.position.z / 5) * 5;
                     } else {
                         mesh.position.z = mesh.userData.position.z;
                     }

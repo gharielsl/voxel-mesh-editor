@@ -41,7 +41,7 @@ class RenderingContext {
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
         (window as any).renderingContext = this;
-        state.renderingContext = this;
+        state.renderingContextProxy = this;
         this.canvas = canvas;
         this.canvasContainer = canvasContainer;
         this.renderer = new THREE.WebGLRenderer({
@@ -143,6 +143,20 @@ class RenderingContext {
         }
     }
 
+    selectObjects = (objects: MeshObject[]) => {
+        objects.forEach((object) => {
+            if (!object.selected) {
+                object.select();
+            }
+            if (!TransformationContext.INSTANCE.selectedObjects.includes(object)) {
+                TransformationContext.INSTANCE.selectedObjects.push(object);
+            }
+        })
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+        }
+    }
+
     clipboard: MeshObject[] = [];
 
     copy = () => {
@@ -230,9 +244,9 @@ class RenderingContext {
         const intersects = rc.intersectObjects(this.clickableObjects, true).reverse();
         let closestIntersect = intersects[0];
         for (const intersect of intersects) {
-            if (!(intersect.object instanceof MeshObject)) {
-                continue;
-            }
+            // if (!(intersect.object instanceof MeshObject)) {
+            //     continue;
+            // }
             if ((intersect.object as MeshObject).disableMouseEvents) {
                 continue;
             }
@@ -241,6 +255,9 @@ class RenderingContext {
                 break;
             }
             closestIntersect = intersect;
+            if (closestIntersect.object.userData.meshObject) {
+                closestIntersect.object = closestIntersect.object.userData.meshObject;
+            }
             // const distance = intersect.point.distanceTo(this.camera.position);
             // intersect.distance = distance;
             // if (intersect.distance < closestIntersect.distance || (intersects[0].object as MeshObject).disableMouseEvents) {

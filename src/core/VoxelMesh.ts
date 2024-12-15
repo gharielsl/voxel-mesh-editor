@@ -14,6 +14,7 @@ class VoxelMesh extends MeshObject {
     smoothNormals: boolean = false;
     smoothGeometry: boolean = false;
     lastDragTime = 0;
+    isVoxelMesh = true;
 
     constructor() {
         super(new THREE.BoxGeometry(0, 0), new THREE.MeshStandardMaterial());

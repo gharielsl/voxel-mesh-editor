@@ -19,14 +19,15 @@ export type SharedState = {
     setCurrentMode: (mode: string) => void,
     brushSize: number,
     brushShape: string,
-    renderingContext?: RenderingContext,
+    renderingContext: () => RenderingContext,
     selectedObject?: MeshObject,
     multipleSelections: boolean,
     objectTransformChange: (object: MeshObject) => void,
     isMouseDown: boolean[],
     treeShowInternal: boolean,
     baseUrl: '/voxel-mesh-editor',
-    cursorShape: string
+    cursorShape: string,
+    renderingContextProxy?: RenderingContext
 }
 
 export const state = reactive<SharedState>({
@@ -46,6 +47,7 @@ export const state = reactive<SharedState>({
     setCurrentMode: () => {},
     brushSize: 1,
     brushShape: 'square',
+    renderingContext: () => (window as any).renderingContext,
     multipleSelections: false,
     objectTransformChange: () => {},
     isMouseDown: [false, false, false, false],
