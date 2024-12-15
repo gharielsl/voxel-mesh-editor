@@ -148,8 +148,7 @@ class VoxelMesh extends MeshObject {
     }
 
     mouseUp = (ev: MouseEvent) => {
-        this.isSelecting = false;
-        if (this.selectFirstPosition && this.selectSecondPosition) {
+        if (this.selectFirstPosition && this.selectSecondPosition && this.isSelecting) {
             const min = new THREE.Vector3(
                 Math.min(this.selectFirstPosition.x, this.selectSecondPosition.x),
                 Math.min(this.selectFirstPosition.y, this.selectSecondPosition.y),
@@ -169,6 +168,7 @@ class VoxelMesh extends MeshObject {
             }
             this.update();
         }
+        this.isSelecting = false;
     }
 
     draw = (position: THREE.Vector3, shape: string, size: number, voxel: number) => {
