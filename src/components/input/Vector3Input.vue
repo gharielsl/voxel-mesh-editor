@@ -19,23 +19,31 @@ export default defineComponent({
     },
     methods: {
         xc(x: number) {
+            this.updateFromProps();
             this.x = x;
             this.$emit("changeValue", new THREE.Vector3(this.x, this.y, this.z));
         },
         yc(y: number) {
+            this.updateFromProps();
             this.y = y;
             this.$emit("changeValue", new THREE.Vector3(this.x, this.y, this.z));
         },
         zc(z: number) {
+            this.updateFromProps();
             this.z = z;
             this.$emit("changeValue", new THREE.Vector3(this.x, this.y, this.z));
+        },
+        updateFromProps() {
+            this.x = this.$props.xp,
+            this.y = this.$props.yp,
+            this.z = this.$props.zp
         }
     },
     data() {
         return {
-            x: 0,
-            y: 0,
-            z: 0
+            x: this.$props.xp,
+            y: this.$props.yp,
+            z: this.$props.zp
         }
     }
 });

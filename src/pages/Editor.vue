@@ -18,7 +18,7 @@
             ToolBar,
             TransformBar,
             Axis,
-            CanvasEditor
+            CanvasEditor,
         }
     });
     
@@ -72,6 +72,7 @@
         flex: 1;
         position: relative;
         height: 100%;
+        overflow: hidden;
     }
 </style>
  

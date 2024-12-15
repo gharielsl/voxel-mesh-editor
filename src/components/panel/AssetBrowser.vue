@@ -1,43 +1,104 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { state } from '../../state';
 
     export default defineComponent({
-
+        methods: {
+            resize(ev: MouseEvent) {
+                if (this.isResizing) {
+                    state.cursorShape = 'row-resize';
+                    const bottomSection = this.$refs.bottomSection as HTMLElement;
+                    if (bottomSection) {
+                        bottomSection.style.minHeight = (+bottomSection.style.minHeight.replace('px', '') - ev.movementY) + 'px'
+                    }
+                }
+            },
+            mouseup() {
+                if (this.isResizing) {
+                    state.cursorShape = 'initial';
+                }
+                this.isResizing = false;
+            }
+        },
+        mounted() {
+            document.addEventListener('mouseup', this.mouseup);
+            document.addEventListener('mousemove', this.resize);
+        },
+        unmounted() {
+            document.removeEventListener('mouseup', this.mouseup);
+            document.removeEventListener('mousemove', this.resize);
+        },
+        data() {
+            return {
+                isResizing: false
+            };
+        }
     });
 </script>
 
 <template>
-    <div class="bottom-section">
-        <div class="tree-browser">
-
+    <div class="bottom-section-container">
+        <div ref="resize" @mousedown="isResizing = true" class="resize">
+            <div style="display: flex; flex-direction: column; justify-content: space-around; height: 100%">
+                <div style="width: 30px; height: 1px; background-color: #ffffff26;"></div>
+                <div style="width: 30px; height: 1px; background-color: #ffffff26;"></div>
+            </div>
         </div>
-        <div class="visual-browser-container">
-            <div class="browser-tools">
-                <div class="browser-tools-add">Add +</div>
-                <div class="browser-tools-title">Material Browser</div>
-                <div class="browser-tools-search">
-                    <input placeholder="Search" type="text">
-                    <div class="browser-tools-search-icon">
-                        <i class="bi bi-search"></i>
+        <div ref="bottomSection" class="bottom-section" style="min-height: 256px;">
+            <div class="tree-browser">
+                
+            </div>
+            <div class="visual-browser-container">
+                <div class="browser-tools">
+                    <div class="browser-tools-add">Add +</div>
+                    <div class="browser-tools-title">Material Browser</div>
+                    <div class="browser-tools-search">
+                        <input placeholder="Search" type="text">
+                        <div class="browser-tools-search-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="visual-browser">
-                
+                <div class="visual-browser">
+                    
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
+    .resize {
+        background-color: var(--color-foreground-2);
+        width: 100%;
+        height: 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .resize:hover {
+        cursor: row-resize;
+    }
+
     .bottom-section {
+        /* position: relative;
+        bottom: 0;
+        left: 0;
+        right: 0; */
+        min-height: 256px;
+        background-color: var(--color-foreground);
+        display: flex;
+    }
+
+    .bottom-section-container {
+        z-index: 10;
         position: relative;
         bottom: 0;
         left: 0;
         right: 0;
-        min-height: 256px;
-        background-color: var(--color-foreground);
         display: flex;
+        flex-direction: column;
     }
 
     .tree-browser {

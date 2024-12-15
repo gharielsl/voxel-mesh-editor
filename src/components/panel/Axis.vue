@@ -54,7 +54,7 @@
 <style scoped>
     .axis {
         position: absolute;
-        z-index: 50;
+        z-index: 2;
         bottom: 64px;
         right: 64px;
         color: black;
