@@ -54,6 +54,7 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
 - <kbd>Left Click</kbd>: Add a voxel.
 - <kbd>Right Click</kbd>: Remove a voxel.
 - <kbd>Ctrl</kbd> + <kbd>Drag</kbd>: Spray voxels.
+- <kbd>Alt</kbd> + <kbd>Drag</kbd>: Select voxels.
 
 ## Voxelifying Imported Mesh
 - On the menu bar select `File`.
