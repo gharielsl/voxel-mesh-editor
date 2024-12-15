@@ -40,10 +40,12 @@ class RenderingContext {
     lastMouseMove?: MouseEvent;
     isDraggingObject = false;
     pressed = new Set();
+    actions: { in: () => boolean, out?: () => void }[] = [];
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
         (window as any).renderingContext = this;
         state.renderingContextProxy = this;
+        state.pushAction = this.pushAction;
         this.canvas = canvas;
         this.canvasContainer = canvasContainer;
         this.renderer = new THREE.WebGLRenderer({
@@ -93,6 +95,13 @@ class RenderingContext {
         document.removeEventListener('keypress', this.handleKeyPress);
         window.removeEventListener('blur', this.handleBlur);
         this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
+    }
+
+    pushAction = (action: { in: () => boolean, out?: () => void }) => {
+        if (this.actions.length === 10) {
+            this.actions.shift()?.out?.();
+        }
+        this.actions.push(action);
     }
 
     update = () => {
@@ -181,10 +190,48 @@ class RenderingContext {
             const copy = o.clone();
             this.scene.add(copy);
             this.clickableObjects.push(copy);
-            this
             TransformationContext.INSTANCE.selectedObjects.push(copy);
             copy.select();
+            state.pushAction({
+                in: () => {
+                    this.deleteObjects([copy]);
+                    return false;
+                }
+            });
         });
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+        }
+    }
+
+    undo = () => {
+        const action = this.actions.pop();
+        if (!action) {
+            return;
+        }
+        if (action.in()) {
+            action.out?.();
+        }
+    }
+
+    deleteObjects = (objects: MeshObject[]) => {
+        const toRemove: MeshObject[] = [];
+        objects.forEach((mesh) => {
+            toRemove.push(mesh);
+            mesh.destoy();
+        });
+
+        toRemove.forEach((mesh) => {
+            const index = this.clickableObjects.indexOf(mesh);
+            const index1 = TransformationContext.INSTANCE.selectedObjects.indexOf(mesh);
+            if (index > -1) {
+                this.clickableObjects.splice(index, 1);
+            }
+            if (index1 > -1) {
+                TransformationContext.INSTANCE.selectedObjects.splice(index1, 1);
+            }
+        });
+
         if (this.outlinePass) {
             this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
         }
@@ -212,9 +259,6 @@ class RenderingContext {
 
     handleKeyDown = (ev: KeyboardEvent) => {
         this.pressed.add(ev.key);
-        if (ev.key === 'Control' || ev.key === 'Alt') {
-            // this.controls.enabled = false;
-        }
         if (ev.key === 'Tab') {
             ev.preventDefault();
         }
@@ -226,20 +270,51 @@ class RenderingContext {
             ev.preventDefault();
         }
         if (ev.code === 'Delete') {
+            const toRemove: MeshObject[] = [];
             TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
+                toRemove.push(mesh);
+                mesh.userData.parent = mesh.parent;
+                mesh.removeFromParent();
+            });
+            toRemove.forEach((mesh) => {
                 const index = this.clickableObjects.indexOf(mesh);
+                const index1 = TransformationContext.INSTANCE.selectedObjects.indexOf(mesh);
+                mesh.unselect();
                 if (index > -1) {
                     this.clickableObjects.splice(index, 1);
+                    mesh.userData.clickable = true;
+                } else {
+                    mesh.userData.clickable = false;
                 }
-                mesh.destoy();
+                if (index1 > -1) {
+                    TransformationContext.INSTANCE.selectedObjects.splice(index1, 1);
+                }
             });
-            TransformationContext.INSTANCE.selectedObjects = [];
+            state.pushAction({
+                in: () => {
+                    toRemove.forEach((mesh) => {
+                        mesh.userData.parent?.add(mesh);
+                        if (mesh.userData.clickable) {
+                            this.clickableObjects.push(mesh);
+                        }
+                    });
+                    return false;
+                },
+                out: () => {
+                    toRemove.forEach((mesh) => {
+                        mesh.destoy();
+                    });
+                }
+            });
         }
         if (ev.code === 'KeyV' && ev.ctrlKey) {
             this.paste();
         }
         if (ev.code === 'KeyC' && ev.ctrlKey) {
             this.copy();
+        }
+        if (ev.code === 'KeyZ' && ev.ctrlKey) {
+            this.undo();
         }
         // this.controls.enabled = this.shouldControlsBeOn();
         if (ev.key === 'Tab') {

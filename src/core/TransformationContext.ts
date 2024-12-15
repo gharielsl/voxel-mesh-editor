@@ -128,6 +128,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalPosition = mesh.position.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.position.copy(originalPosition);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.position = mesh.position.clone();
                     }
                     let movement = ev.movement3dXZ.x - ev.movement3dOriginXZ.x;
@@ -145,6 +154,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalPosition = mesh.position.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.position.copy(originalPosition);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.position = mesh.position.clone();
                     }
                     let movement = ev.movement3dY.y - ev.movement3dOriginY.y;
@@ -162,6 +180,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalPosition = mesh.position.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.position.copy(originalPosition);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.position = mesh.position.clone();
                     }
                     let movement = ev.movement3dXZ.z - ev.movement3dOriginXZ.z;
@@ -180,7 +207,6 @@ class TransformationContext {
             children.forEach((child) => {
                 let mesh = child as MeshObject;
                 if (mesh.isMesh) {
-                    // (mesh as any).material.opacity = 0.5;
                     mesh = MeshObject.fromMesh(mesh);
                     mesh.draggable = false;
                     mesh.internal = true;
@@ -206,6 +232,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalScale = mesh.scale.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.scale.copy(originalScale);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.scale = mesh.scale.clone();
                     }
                     let movement = ev.movement3dXZ.x - ev.movement3dOriginXZ.x;
@@ -224,6 +259,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalScale = mesh.scale.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.scale.copy(originalScale);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.scale = mesh.scale.clone();
                     }
                     let movement = ev.movement3dY.y - ev.movement3dOriginY.y;
@@ -242,6 +286,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalScale = mesh.scale.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.scale.copy(originalScale);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.scale = mesh.scale.clone();
                     }
                     let movement = ev.movement3dXZ.z - ev.movement3dOriginXZ.z;
@@ -323,9 +376,6 @@ class TransformationContext {
                 } else if (mesh.name === 'Free') {
                     this.rotateFree = mesh;
                     (mesh.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
-                    // (mesh.material as THREE.MeshStandardMaterial).color = new THREE.Color(1, 0.5, 0.5);
-                    // (mesh.material as THREE.MeshStandardMaterial).opacity = 0.2;
-                    // this.scene.add(mesh);
                 }
             });
 
@@ -336,6 +386,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalRotation = mesh.rotation.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.rotation.copy(originalRotation);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.rotation = mesh.rotation.clone();
                         mesh.userData.prevAngleX = Math.atan2(ev.movement3dOriginY.z, ev.movement3dOriginY.y);
                     }
@@ -362,6 +421,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalRotation = mesh.rotation.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.rotation.copy(originalRotation);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.rotation = mesh.rotation.clone();
                         mesh.userData.prevAngle = Math.atan2(ev.movement3dOriginXZ.z, ev.movement3dOriginXZ.x);
                     }
@@ -389,6 +457,15 @@ class TransformationContext {
                 }
                 this.selectedObjects.forEach((mesh) => {
                     if (ev.isFirstMovement) {
+                        const originalRotation = mesh.rotation.clone();
+                        state.pushAction({
+                            in: () => {
+                                if (mesh) {
+                                    mesh.rotation.copy(originalRotation);
+                                }
+                                return false;
+                            }
+                        });
                         mesh.userData.rotation = mesh.rotation.clone();
                         mesh.userData.prevAngleZ = Math.atan2(ev.movement3dOriginY.y, ev.movement3dOriginY.x);
                     }

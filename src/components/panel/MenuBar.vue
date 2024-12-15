@@ -115,7 +115,8 @@ import MeshObject from '../../core/MeshObject';
                 </div>
                 <div v-if="mouseInEdit" class="menu-list">
                     <div @click="state.renderingContext()?.copy();mouseInEdit = false" class="menu-list-item">Copy (Ctrl + C)</div>
-                    <div @click="state.renderingContext()?.paste();mouseInEdit = false" class="menu-list-item">Paste (Ctrl + v)</div>
+                    <div @click="state.renderingContext()?.paste();mouseInEdit = false" class="menu-list-item">Paste (Ctrl + V)</div>
+                    <div @click="state.renderingContext()?.undo();mouseInEdit = false" class="menu-list-item">Undo (Ctrl + Z)</div>
                 </div>
             </div>
             <div @mouseenter="mouseIn('mouseInAdd')" @mouseleave="mouseOut('mouseInAdd')" class="menu-item">

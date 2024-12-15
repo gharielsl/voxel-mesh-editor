@@ -81,10 +81,10 @@ class VoxelMesh extends MeshObject {
                 position = this.worldToLocal(position);
                 if (this.marchCubes) {
                     const brushSize = state.brushSize + 1;
-                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1);
+                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1, true);
                 } else {
                     const brushSize = state.brushSize - 1;
-                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1);
+                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1, true);
                 }
                 this.lastDragTime = Date.now();
             } else if (this.isSelecting && this.selectFirstPosition) {
@@ -138,10 +138,10 @@ class VoxelMesh extends MeshObject {
                 point = this.worldToLocal(point);
                 if (this.marchCubes) {
                     const brushSize = state.brushSize + 1;
-                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1);
+                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1, true);
                 } else {
                     const brushSize = state.brushSize - 1;
-                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1);
+                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1, true);
                 }
             }
         });
@@ -159,28 +159,58 @@ class VoxelMesh extends MeshObject {
                 Math.max(this.selectFirstPosition.y, this.selectSecondPosition.y),
                 Math.max(this.selectFirstPosition.z, this.selectSecondPosition.z),
             );
+            const originalVoxels: any = { };
             for (let x = min.x; x <= max.x; x++) {
                 for (let y = min.y; y <= max.y; y++) {
                     for (let z = min.z; z <= max.z; z++) {
+                        if (!originalVoxels[x]) originalVoxels[x] = { };
+                        if (!originalVoxels[x][y]) originalVoxels[x][y] = { };
+                        originalVoxels[x][y][z] = this.getVoxel(x, y, z);
                         this.setVoxel(x, y, z, this.selectButton === 2 ? 0 : 1);
                     }
                 }
             }
+            state.pushAction({
+                in: () => {
+                    for (const [x, _] of Object.entries(originalVoxels)) {
+                        for (const [y, _] of Object.entries(originalVoxels[x])) {
+                            for (const [z, voxel] of Object.entries(originalVoxels[x][y])) {
+                                this.setVoxel(+x, +y, +z, voxel as number);
+                            }
+                        }
+                    }
+                    this.update();
+                    return true;
+                }
+            })
             this.update();
         }
         this.isSelecting = false;
     }
 
-    draw = (position: THREE.Vector3, shape: string, size: number, voxel: number) => {
+    draw = (position: THREE.Vector3, shape: string, size: number, voxel: number, addUndo = false) => {
         if (!this.marchCubes && shape === 'round') {
             size += 3;
         }
+        let originalVoxels: any = { };
         if (size === 0) {
+            originalVoxels = { 
+                [position.x]: {
+                    [position.y]: {
+                        [position.z]: this.getVoxel(position.x, position.y, position.z)
+                    }
+                }
+            }
             this.setVoxel(position.x, position.y, position.z, voxel);
         }
         for (let x = -size; x < size; x++) {
             for (let y = -size; y < size; y++) {
                 for (let z = -size; z < size; z++) {
+                    if (addUndo) {
+                        if (!originalVoxels[position.x + x]) originalVoxels[position.x + x] = { };
+                        if (!originalVoxels[position.x + x][position.y + y]) originalVoxels[position.x + x][position.y + y] = { };
+                        originalVoxels[position.x + x][position.y + y][position.z + z] = this.getVoxel(position.x + x, position.y + y, position.z + z);
+                    }
                     if (shape === 'square') {
                         this.setVoxel(position.x + x, position.y + y, position.z + z, voxel);
                     } else if (shape === 'round') {
@@ -190,6 +220,21 @@ class VoxelMesh extends MeshObject {
                     }
                 }
             }
+        }
+        if (addUndo) {
+            state.pushAction({
+                in: () => {
+                    for (const [x, _] of Object.entries(originalVoxels)) {
+                        for (const [y, _] of Object.entries(originalVoxels[x])) {
+                            for (const [z, voxel] of Object.entries(originalVoxels[x][y])) {
+                                this.setVoxel(+x, +y, +z, voxel as number);
+                            }
+                        }
+                    }
+                    this.update();
+                    return false;
+                }
+            });
         }
         this.update();
     }
@@ -297,7 +342,11 @@ class VoxelMesh extends MeshObject {
         const copy = super.clone() as any;
         for (const key of Object.keys(this)) {
             if (!(key in copy)) {
-                copy[key] = (this as any)[key];
+                try {
+                    copy[key] = (this as any)[key];
+                } catch {
+
+                }
             }
         }
         copy.data = { };

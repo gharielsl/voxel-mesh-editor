@@ -115,10 +115,14 @@ class MeshObject extends THREE.Mesh {
         const copy = super.clone() as any;
         for (const key of Object.keys(this)) {
             if (!(key in copy)) {
-                copy[key] = (this as any)[key];
+                try {
+                    copy[key] = (this as any)[key];
+                } catch {
+
+                }
             }
         }
-        return copy;
+        return MeshObject.fromMesh(copy) as any;
     }
 }
 

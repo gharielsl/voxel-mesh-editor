@@ -28,7 +28,8 @@ export type SharedState = {
     baseUrl: '/voxel-mesh-editor',
     cursorShape: string,
     renderingContextProxy?: RenderingContext,
-    fullscreen: boolean
+    fullscreen: boolean,
+    pushAction: (action: { in: () => boolean, out?: () => void }) => void
 }
 
 export const state = reactive<SharedState>({
@@ -55,5 +56,6 @@ export const state = reactive<SharedState>({
     treeShowInternal: false,
     baseUrl: '/voxel-mesh-editor',
     cursorShape: 'initial',
-    fullscreen: document.fullscreenElement !== null
+    fullscreen: document.fullscreenElement !== null,
+    pushAction: () => { }
 });
