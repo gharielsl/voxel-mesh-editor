@@ -112,17 +112,34 @@ class MeshObject extends THREE.Mesh {
     }
 
     public clone() {
-        const copy = super.clone() as any;
-        for (const key of Object.keys(this)) {
-            if (!(key in copy)) {
-                try {
-                    copy[key] = (this as any)[key];
-                } catch {
-
-                }
-            }
+        let clonedMat;
+        if (Array.isArray(this.material)) {
+            clonedMat = [];
+            this.material.forEach((material) => {
+                clonedMat.push((material as THREE.Material).clone())
+            });
+        } else {
+            clonedMat = (this.material as THREE.Material).clone();
         }
-        return MeshObject.fromMesh(copy) as any;
+        const copy = new MeshObject(this.geometry.clone(), clonedMat);
+        this.traverse((child) => {
+            if (child !== this) {
+                const userData = child.userData;
+                child.userData = { };
+                const clonedChild = child.clone(false);
+                clonedChild.userData = { ...userData };
+                if (clonedChild.userData.meshObject) {
+                    clonedChild.userData.meshObject = copy;
+                }
+                child.userData = userData;
+                copy.add(clonedChild);
+            }
+        });
+        copy.name = this.name + ' (Copy)';
+        copy.position.copy(this.position);
+        copy.scale.copy(this.scale);
+        copy.rotation.copy(this.rotation);
+        return copy as any;
     }
 }
 
