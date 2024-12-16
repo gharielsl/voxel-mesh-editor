@@ -101,14 +101,14 @@
                     </div>
                 </div>
             </div>
-            <div class="mode-bar-item">
+            <!-- <div class="mode-bar-item">
                 <div class="mode-bar-item-select">
                     <div class="mode-button">
                         <i class="bi bi-globe-americas"></i>
                         World Material
                     </div>
                 </div>
-            </div>
+            </div> -->
             <div :style="`width: ${space}px;`"></div>
         </div>
     </div>

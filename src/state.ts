@@ -1,11 +1,9 @@
 import { reactive } from 'vue';
 import RenderingContext from './core/RenderingContext';
 import MeshObject from './core/MeshObject';
+import { VoxelMaterial } from './types/default';
 
 export type SharedState = {
-    rotationX: number,
-    rotationY: number,
-    rotationZ: number,
     currentTool: string,
     currentMode: string,
     currentRenderMode: '',
@@ -29,13 +27,12 @@ export type SharedState = {
     cursorShape: string,
     renderingContextProxy?: RenderingContext,
     fullscreen: boolean,
-    pushAction: (action: { in: () => boolean, out?: () => void }) => void
+    pushAction: (action: { in: () => boolean, out?: () => void }) => void,
+    materials: VoxelMaterial[],
+    selectedMaterial?: VoxelMaterial
 }
 
 export const state = reactive<SharedState>({
-    rotationX: 0,
-    rotationY: 0,
-    rotationZ: 0,
     currentTool: 'edit',
     currentMode: 'object',
     currentRenderMode: '',
@@ -57,5 +54,6 @@ export const state = reactive<SharedState>({
     baseUrl: '/voxel-mesh-editor',
     cursorShape: 'initial',
     fullscreen: document.fullscreenElement !== null,
-    pushAction: () => { }
+    pushAction: () => { },
+    materials: [{ color: 0xffffff }]
 });

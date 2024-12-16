@@ -1,15 +1,24 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { state } from '../../state';
+import MaterialItem from './MaterialItem.vue';
+import MaterialEditor from './MaterialEditor.vue';
+import { VoxelMaterial } from '../../types/default';
 
     export default defineComponent({
+        components: {
+            MaterialItem,
+            MaterialEditor
+        },
         methods: {
             resize(ev: MouseEvent) {
                 if (this.isResizing) {
                     state.cursorShape = 'row-resize';
                     const bottomSection = this.$refs.bottomSection as HTMLElement;
-                    if (bottomSection) {
-                        bottomSection.style.minHeight = (+bottomSection.style.minHeight.replace('px', '') - ev.movementY) + 'px'
+                    const editor = this.$refs.editor as HTMLElement;
+                    if (bottomSection && editor) {
+                        bottomSection.style.height = (+bottomSection.style.height.replace('px', '') - ev.movementY) + 'px';
+                        editor.style.height = (+bottomSection.style.height.replace('px', '') + 48 - ev.movementY) + 'px';
                     }
                 }
             },
@@ -23,6 +32,12 @@ import { state } from '../../state';
         mounted() {
             document.addEventListener('mouseup', this.mouseup);
             document.addEventListener('mousemove', this.resize);
+            state.selectedMaterial = state.materials[0];
+            const bottomSection = this.$refs.bottomSection as HTMLElement;
+            const editor = this.$refs.editor as HTMLElement;
+            if (bottomSection && editor) {
+                editor.style.height = (+bottomSection.style.height.replace('px', '') + 48) + 'px';
+            }
         },
         unmounted() {
             document.removeEventListener('mouseup', this.mouseup);
@@ -30,7 +45,8 @@ import { state } from '../../state';
         },
         data() {
             return {
-                isResizing: false
+                isResizing: false,
+                state
             };
         }
     });
@@ -44,23 +60,25 @@ import { state } from '../../state';
                 <div style="width: 30px; height: 1px; background-color: #ffffff26;"></div>
             </div>
         </div>
-        <div ref="bottomSection" class="bottom-section" style="min-height: 256px;">
-            <div class="tree-browser">
-                
+        <div class="bottom-section">
+            <div ref="editor" class="editor">
+                <MaterialEditor />
             </div>
             <div class="visual-browser-container">
                 <div class="browser-tools">
-                    <div class="browser-tools-add">Add +</div>
+                    <div @click="state.materials.push({ color: '#ffffff' })" class="browser-tools-add">Add +</div>
                     <div class="browser-tools-title">Material Browser</div>
                     <div class="browser-tools-search">
-                        <input placeholder="Search" type="text">
+                        <input placeholder="Filter" type="text">
                         <div class="browser-tools-search-icon">
                             <i class="bi bi-search"></i>
                         </div>
                     </div>
                 </div>
-                <div class="visual-browser">
-                    
+                <div ref="bottomSection" class="visual-browser" style="height: 256px;">
+                    <div class="visual-browser-items">
+                        <MaterialItem v-for="(material, index) of state.materials" :index="index" :material="material" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -82,11 +100,6 @@ import { state } from '../../state';
     }
 
     .bottom-section {
-        /* position: relative;
-        bottom: 0;
-        left: 0;
-        right: 0; */
-        min-height: 256px;
         background-color: var(--color-foreground);
         display: flex;
     }
@@ -101,10 +114,14 @@ import { state } from '../../state';
         flex-direction: column;
     }
 
-    .tree-browser {
-        width: 256px;
+    .editor {
+        width: 300px;
+        overflow: auto;
         background-color: var(--color-foreground-1);
         border: 1px var(--color-foreground-2) solid;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .visual-browser-container {
@@ -114,9 +131,16 @@ import { state } from '../../state';
     }
 
     .visual-browser {
-        flex: 1;
+        /* flex: 1; */
+        /* height: 256px; */
+        overflow: auto;
         border-top: 1px var(--color-foreground-2) solid;
         border-bottom: 1px var(--color-foreground-2) solid;
+    }
+
+    .visual-browser-items {
+        display: flex;
+        flex-wrap: wrap;
     }
 
     .browser-tools {

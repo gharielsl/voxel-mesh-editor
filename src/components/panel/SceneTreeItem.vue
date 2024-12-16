@@ -114,7 +114,8 @@ export default defineComponent({
     },
     data() {
         return {
-            state
+            state,
+            name: this.$refs.name as HTMLElement
         }
     }
 });
@@ -126,7 +127,7 @@ export default defineComponent({
             <div class="title" @mouseover="onMouseOver(index as number)" @mouseleave="onMouseLeave" :class="{ hovered: hoverIndex === index }">
                 <div @click="collapsed=!collapsed;" class="title-left">
                     <i :class="{'bi bi-caret-down-fill': !collapsed, 'bi bi-caret-right-fill': collapsed}" :style="`display: ${itemHasChildren(item as MeshObject) ? 'block' : 'none'}`"></i>
-                    <div style="margin-left: 4px;">
+                    <div ref="name" style="margin-left: 4px;overflow: hidden;max-height: 24px;text-align: left;">
                         {{ (item?.name || (item as any)?.constructor.name) + `<#${item?.id}>` }}
                     </div>
                 </div>
@@ -134,7 +135,7 @@ export default defineComponent({
                     <i v-if="!isItemInternal(item as any)" @click="checkChange(item as MeshObject, $event, true, true)" :class="{'bi bi-eye-fill': (item as any)?.visible, 'bi bi-eye-slash-fill': !(item as any)?.visible}"></i>
                     <input :disabled="(state.currentMode !== 'object') || isItemInternal(item as any)" @change="checkChange(item as MeshObject, $event, true, false)" type="checkbox" :checked="(item as MeshObject)?.selected || areAllChildrenSelected(item as MeshObject)">
                 </div>
-            </div>
+            </div> 
             <div v-if="!collapsed" v-for="(child, idx) in item?.children" :key="child.id || idx" style="width:100%">
                 <SceneTreeItem 
                     v-if="!isItemInternal(child) || state.treeShowInternal"

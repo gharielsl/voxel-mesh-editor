@@ -103,10 +103,22 @@ import MeshObject from '../../core/MeshObject';
                     File
                 </div>
                 <div v-if="mouseInFile" class="menu-list">
-                    <div class="menu-list-item">Open (Ctrl + O)</div>
-                    <div class="menu-list-item">Save (Ctrl + S)</div>
-                    <div @click="importFile" class="menu-list-item">Import GLB/GLTF</div>
-                    <div class="menu-list-item">Export</div>
+                    <div class="menu-bar-item-btn">
+                        <div>Open</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + O)</div>
+                    </div>
+                    <div class="menu-bar-item-btn">
+                        <div>Save</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + S)</div>
+                    </div>
+                    <div @click="importFile" class="menu-bar-item-btn">
+                        <div>Import GLB/GLTF</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                    </div>
+                    <div class="menu-bar-item-btn">
+                        <div>Export</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                    </div>
                 </div>
             </div>
             <div @mouseenter="mouseIn('mouseInEdit')" @mouseleave="mouseOut('mouseInEdit')" class="menu-item">
@@ -114,9 +126,18 @@ import MeshObject from '../../core/MeshObject';
                     Edit
                 </div>
                 <div v-if="mouseInEdit" class="menu-list">
-                    <div @click="state.renderingContext()?.copy();mouseInEdit = false" class="menu-list-item">Copy (Ctrl + C)</div>
-                    <div @click="state.renderingContext()?.paste();mouseInEdit = false" class="menu-list-item">Paste (Ctrl + V)</div>
-                    <div @click="state.renderingContext()?.undo();mouseInEdit = false" class="menu-list-item">Undo (Ctrl + Z)</div>
+                    <div @click="state.renderingContext()?.copy();mouseInEdit = false" class="menu-bar-item-btn">
+                        <div>Copy</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + C)</div>
+                    </div>
+                    <div @click="state.renderingContext()?.paste();mouseInEdit = false" class="menu-bar-item-btn">
+                        <div>Paste</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + V)</div>
+                    </div>
+                    <div @click="state.renderingContext()?.undo();mouseInEdit = false" class="menu-bar-item-btn">
+                        <div>Undo</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + Z)</div>
+                    </div>
                 </div>
             </div>
             <div @mouseenter="mouseIn('mouseInAdd')" @mouseleave="mouseOut('mouseInAdd')" class="menu-item">
@@ -124,8 +145,14 @@ import MeshObject from '../../core/MeshObject';
                     Add
                 </div>
                 <div v-if="mouseInAdd" class="menu-list">
-                    <div @click="addVoxelMesh" class="menu-list-item">Voxel Mesh</div>
-                    <div @click="addVoxel" class="menu-list-item">Voxel</div>
+                    <div @click="addVoxelMesh" class="menu-bar-item-btn">
+                        <div>Voxel Mesh</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)">(5x5x5)</div>
+                    </div>
+                    <div @click="addVoxel" class="menu-bar-item-btn">
+                        <div>Voxel</div>
+                        <div style="font-size: small; color: var(--color-text-disabled)">(1x1x1)</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -199,5 +226,20 @@ import MeshObject from '../../core/MeshObject';
         padding-right: 7px;
         border-radius: 8px;
         border: 1px var(--color-secondary) dashed;
+    }
+
+    .menu-bar-item-btn {
+        border-bottom: 1px solid var(--color-foreground-2);
+        padding-top: 2px;
+        padding-bottom: 2px;
+        padding-left: 12px;
+        padding-right: 12px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .menu-bar-item-btn:hover {
+        background-color: var(--color-foreground-2-bright);
+        cursor: pointer;
     }
 </style>

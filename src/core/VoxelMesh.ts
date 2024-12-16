@@ -20,8 +20,11 @@ class VoxelMesh extends MeshObject {
     selectSecondPosition?: THREE.Vector3;
     selectButton?: number;
 
-    constructor() {
-        super(new THREE.BoxGeometry(0, 0), new THREE.MeshStandardMaterial());
+    worldToLocal(vector: THREE.Vector3): THREE.Vector3 {
+        return vector.clone().applyMatrix4(this.matrixWorld.clone().invert());
+    }
+
+    _init = () => {
         this.sphere = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshStandardMaterial({
             transparent: true,
             depthTest: true,
@@ -65,11 +68,11 @@ class VoxelMesh extends MeshObject {
             }
             sphere.visible = state.brushShape === 'round';
             cube.visible = state.brushShape === 'square';
-            let position = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
+            let position = this.worldToLocal(ev.intersect.point);
+            position = position.add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
             if (state.brushShape === 'square' && state.brushSize > 1) {
                 position = position.subScalar(0.5);
             }
-            position = this.worldToLocal(position);
             sphere.position.copy(position);
             cube.position.copy(position);
             const isAnyDown = state.isMouseDown[0] || state.isMouseDown[2];
@@ -78,7 +81,6 @@ class VoxelMesh extends MeshObject {
                 if (state.isMouseDown[2]) {
                     position = position.add(ev.intersect.normal?.clone().ceil().multiplyScalar(-1) as THREE.Vector3);
                 }
-                position = this.worldToLocal(position);
                 if (this.marchCubes) {
                     const brushSize = state.brushSize + 1;
                     this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1, true);
@@ -112,8 +114,8 @@ class VoxelMesh extends MeshObject {
             if (ev.altKey) {
                 this.selectButton = ev.button;
                 this.isSelecting = true;
-                let position = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
-                position = this.worldToLocal(position);
+                let position = this.worldToLocal(ev.intersect.point);
+                position = position.add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
                 this.selectFirstPosition = position;
             }
         });
@@ -129,13 +131,13 @@ class VoxelMesh extends MeshObject {
 
         this.addClickListener((ev) => {
             if (state.currentMode === 'sculpt') {
-                let point = ev.intersect.point.clone().add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
+                let point = this.worldToLocal(ev.intersect.point);
+                point = point.add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).addScalar(0.5).floor();
                 if (!this.marchCubes) {
                     if (ev.button == 2) {
                         point = point.add(ev.intersect.normal?.clone().ceil().multiplyScalar(-1) as THREE.Vector3);
                     }
                 }
-                point = this.worldToLocal(point);
                 if (this.marchCubes) {
                     const brushSize = state.brushSize + 1;
                     this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1, true);
@@ -145,6 +147,15 @@ class VoxelMesh extends MeshObject {
                 }
             }
         });
+
+
+
+
+    }
+
+    constructor() {
+        super(new THREE.BoxGeometry(0, 0), new THREE.MeshStandardMaterial());
+        this._init();
     }
 
     mouseUp = (ev: MouseEvent) => {
@@ -339,24 +350,21 @@ class VoxelMesh extends MeshObject {
     }
 
     clone() {
-        const copy = super.clone() as any;
-        for (const key of Object.keys(this)) {
-            if (!(key in copy)) {
-                try {
-                    copy[key] = (this as any)[key];
-                } catch {
-
-                }
-            }
-        }
-        copy.data = { };
+        const copy = new VoxelMesh();
+        copy.position.copy(this.position);
+        copy.scale.copy(this.scale);
+        copy.rotation.copy(this.rotation);
         for (const [x, _] of Object.entries(this.data)) {
-            for (const [y, _] of Object.entries(this.data)) {
-                for (const [z, _] of Object.entries(this.data)) {
-                    copy.setVoxel(+x, +y, +z, this.getVoxel(+x, +y, +z));
+            for (const [y, _] of Object.entries(this.data[x])) {
+                for (const [z, voxel] of Object.entries(this.data[x][y])) {
+                    copy.setVoxel(+x, +y, +z, voxel as number);
                 }
             }
         }
+        copy.marchCubes = this.marchCubes;
+        copy.smoothNormals = this.smoothNormals;
+        copy.smoothGeometry = this.smoothGeometry;
+        copy.update();
         return copy;
     }
 }
