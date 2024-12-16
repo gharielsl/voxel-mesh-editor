@@ -1,0 +1,126 @@
+<script lang="ts">
+import { defineComponent } from 'vue';
+import { Vue3ColorPicker } from '@cyhnkckali/vue3-color-picker';
+import ImageUpload from '../input/ImageUpload.vue';
+import { state } from '../../state';
+
+export default defineComponent({
+    components: {
+        Vue3ColorPicker,
+        ImageUpload
+    },
+    methods: {
+
+    },
+    data() {
+        return {
+            colorOpen: false,
+            textureOpen: false,
+            normalOpen: false,
+            state
+        }
+    }
+});
+
+</script>
+
+<template>
+    <div class="material-editor">
+        <div class="material-editor-title">Material 1</div>
+    </div>
+    <div v-if="state.selectedMaterial" class="material-properties">
+        <div :class="{'object-option-group': true, 'color': true, 'collapse': !colorOpen}" style="margin-top: 8px;">
+            <div @click="colorOpen = !colorOpen" class="group-title">
+                <i :class="colorOpen ? 'bi bi-caret-down-fill' : 'bi bi-caret-right-fill'"></i>
+                <h5 style="margin-left: 8px;">Color</h5>
+            </div>
+            <div class="material-property">
+                <Vue3ColorPicker mode="solid" :showPickerMode="false" :showColorList="false" :showEyeDrop="false" type="RGBA" theme="dark" :showAlpha="false" style="width: 256px"/>
+            </div>
+        </div>
+        <div :class="{'object-option-group': true, 'collapse': !textureOpen}" style="margin-top: 8px;">
+            <div @click="textureOpen = !textureOpen" class="group-title">
+                <i :class="textureOpen ? 'bi bi-caret-down-fill' : 'bi bi-caret-right-fill'"></i>
+                <h5 style="margin-left: 8px;">Texture</h5>
+            </div>
+            <div class="material-property">
+                <ImageUpload />
+            </div>
+        </div>
+        <div :class="{'object-option-group': true, 'collapse': !normalOpen}" style="margin-top: 8px;margin-bottom: 8px;">
+            <div @click="normalOpen = !normalOpen" class="group-title">
+                <i :class="normalOpen ? 'bi bi-caret-down-fill' : 'bi bi-caret-right-fill'"></i>
+                <h5 style="margin-left: 8px;">Normal Texture</h5>
+            </div>
+            <div class="material-property">
+                <ImageUpload />
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+    .material-editor {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .material-properties {
+        display: flex;
+        flex-direction: column;
+        width: 90%;
+    }
+
+    .material-property {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .material-editor-title {
+        height: 48px;
+        width: 100%;
+        border-bottom: 1px var(--color-foreground-2) solid;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .object-option-group {
+        border-radius: 8px;
+        padding: 4px;
+        background-color: var(--color-background);
+        height: 288px;
+        transition: height 0.3s ease-in;
+        overflow: hidden;
+    }
+
+    .object-option-group.color {
+        height: 320px;
+        transition: height 0.3s ease-in;
+    }
+
+    .object-option-group.collapse {
+        height: 32px;
+        transition: height 0.3s ease-out;
+    }
+
+    .group-title {
+        height: 32px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        margin-left: 4px;
+    }
+
+    .group-title:hover {
+        cursor: pointer;
+        color: var(--color-primary)
+    }
+
+    h5 {
+        margin: 0
+    }
+</style>

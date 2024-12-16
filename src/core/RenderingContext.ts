@@ -66,7 +66,8 @@ class RenderingContext {
         this.controls = new OrbitControls(this.camera, canvas);
         this.gizmo = new ViewportGizmo(this.camera, this.renderer, {
             placement: 'bottom-right',
-            container: this.canvasContainer
+            container: this.canvasContainer,
+            size: 128
         });
         this.gizmo.attachControls(this.controls);
         this.clock = new THREE.Clock(true);
@@ -77,6 +78,7 @@ class RenderingContext {
         this.createGrid();
         this.createControlMeshes();
         this.createPostProccess();
+        setTimeout(this.handleResize, 100);
         this.update();
     }
 

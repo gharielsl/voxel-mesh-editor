@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cyhnkckali/vue3-color-picker": "^2.0.7",
     "bootstrap-icons": "^1.11.3",
     "splitpanes": "^3.1.5",
     "three": "^0.169.0",
