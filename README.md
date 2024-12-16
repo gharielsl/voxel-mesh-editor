@@ -10,7 +10,7 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
     - [x] Copy paste
     - [x] Transform
     - [x] Undo
-    - [ ] Fly controls
+    - [x] Fly controls
 - Voxel mode
     - [x] Add/Remove
     - [x] Spray
@@ -22,7 +22,6 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
     - [ ] Voxelify mesh
 - Materials
     - [ ] Selection
-    - [ ] Multiple groups
     - [ ] Voxel mesh shader
 - Import/Export
     - [ ] Save/Open
@@ -35,10 +34,10 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
 ## Controls
 
 ### General
-- <kbd>Wheel Mouse Button</kbd> + <kbd>Drag</kbd>: Orbit.
-- <kbd>Left Mouse Button</kbd> + <kbd>Drag</kbd>: Fly.
+- <kbd>Left Mouse Button</kbd> + <kbd>Drag</kbd>: Orbit.
+- <kbd>Right Mouse Button</kbd> + <kbd>Drag</kbd>: Fly.
 - <kbd>Left Mouse Button</kbd> + <kbd>W</kbd>  <kbd>A</kbd>  <kbd>S</kbd>  <kbd>D</kbd>: Fly - move.
-- <kbd>Right Mouse Button</kbd> + <kbd>Drag</kbd>: Span.
+- <kbd>Shift</kbd> + <kbd>Drag</kbd>: Pan.
 - <kbd>Tab</kbd>: Switch between object mode and voxel mode.
 
 ### Object Mode

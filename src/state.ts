@@ -4,9 +4,6 @@ import MeshObject from './core/MeshObject';
 import { VoxelMaterial } from './types/default';
 
 export type SharedState = {
-    rotationX: number,
-    rotationY: number,
-    rotationZ: number,
     currentTool: string,
     currentMode: string,
     currentRenderMode: '',
@@ -36,9 +33,6 @@ export type SharedState = {
 }
 
 export const state = reactive<SharedState>({
-    rotationX: 0,
-    rotationY: 0,
-    rotationZ: 0,
     currentTool: 'edit',
     currentMode: 'object',
     currentRenderMode: '',

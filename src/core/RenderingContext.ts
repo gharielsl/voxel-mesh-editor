@@ -1,6 +1,6 @@
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
 import * as THREE from 'three';
-import { EffectComposer, FXAAShader, OrbitControls, OutlinePass, RenderPass, ShaderPass, SAOPass } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, FXAAShader, OrbitControls, OutlinePass, RenderPass, ShaderPass, SAOPass, RectAreaLightUniformsLib } from 'three/examples/jsm/Addons.js';
 import { state } from '../state';
 import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
@@ -41,7 +41,9 @@ class RenderingContext {
     lastMouseMove?: MouseEvent;
     isDraggingObject = false;
     pressed = new Set();
+    flySpeed = 1;
     gizmo: ViewportGizmo;
+    isLooking = false;
     actions: { in: () => boolean, out?: () => void }[] = [];
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
@@ -83,7 +85,6 @@ class RenderingContext {
     }
 
     createEvents = () => {
-        document.addEventListener('ui-camera-rotate', this.handleCameraRotationFromUi);
         this.canvasContainer.addEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.addEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.addEventListener('mouseup', this.handleMouseUp);
@@ -91,11 +92,11 @@ class RenderingContext {
         document.addEventListener('keydown', this.handleKeyDown);
         document.addEventListener('keypress', this.handleKeyPress);
         window.addEventListener('blur', this.handleBlur);
+        window.addEventListener('wheel', this.handleWheel);
         this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     }
 
     clearEvents = () => {
-        document.removeEventListener('ui-camera-rotate', this.handleCameraRotationFromUi);
         this.canvasContainer.removeEventListener('mousemove', this.handleMouseMove);
         this.canvasContainer.removeEventListener('mousedown', this.handleMouseDown);
         this.canvasContainer.removeEventListener('mouseup', this.handleMouseUp);
@@ -103,6 +104,7 @@ class RenderingContext {
         document.removeEventListener('keydown', this.handleKeyDown);
         document.removeEventListener('keypress', this.handleKeyPress);
         window.removeEventListener('blur', this.handleBlur);
+        window.removeEventListener('wheel', this.handleWheel);
         this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
     }
 
@@ -115,7 +117,35 @@ class RenderingContext {
 
     update = () => {
         const delta = this.clock.getDelta();
+        this.controls.enabled = false;
         this.controls.enabled = this.shouldControlsBeOn();
+        this.controls.enablePan = !this.isLooking;
+        this.controls.enableZoom = !this.isLooking;
+        let forward = new THREE.Vector3();
+        const matrixWorld = this.camera.matrixWorld.toArray();
+        let right = new THREE.Vector3(matrixWorld[0], matrixWorld[1], matrixWorld[2]).normalize();
+        this.camera.getWorldDirection(forward);
+        const unscaledForward = forward.clone();
+        forward = forward.multiplyScalar(this.flySpeed);
+        right = right.multiplyScalar(this.flySpeed);
+        let isFlying = false;
+        if (this.pressed.has('w') && this.isLooking) {
+            this.camera.position.add(forward);
+            isFlying = true;
+        } else if (this.pressed.has('s') && this.isLooking) {
+            this.camera.position.sub(forward);
+            isFlying = true;
+        }
+        if (this.pressed.has('d') && this.isLooking) {
+            this.camera.position.add(right);
+            isFlying = true;
+        } else if (this.pressed.has('a') && this.isLooking) {
+            this.camera.position.sub(right);
+            isFlying = true;
+        }
+        if (isFlying) {
+            this.controls.target = this.camera.position.clone().add(unscaledForward.multiplyScalar(100));
+        }
         if (this.lastMouseMove) {
             let hover = this.intersectObject(this.lastMouseMove.offsetX, this.lastMouseMove.offsetY);
             this.clickableObjects.forEach((mesh) => {
@@ -138,13 +168,12 @@ class RenderingContext {
                 (hover.object as MeshObject).invokeHoverEvent(ev3d);
             }
         }
-        this.controls.update();
-        TWEEN.update();
+        
+        if (!this.isLooking) {
+            this.controls.update();
+        }
         TransformationContext.INSTANCE.update(this.camera);
-        this.camera.rotation.reorder('YXZ');
-        state.rotationX = THREE.MathUtils.radToDeg(this.camera.rotation.x);
-        state.rotationY = THREE.MathUtils.radToDeg(this.camera.rotation.y);
-        state.rotationZ = THREE.MathUtils.radToDeg(this.camera.rotation.z);
+        // this.camera.rotation.reorder('YXZ');
         TransformationContext.INSTANCE.scene.visible = false;
         this.renderer.clearDepth();
         this.effectComposter.render();
@@ -154,8 +183,10 @@ class RenderingContext {
         this.renderer.render(this.topLevel, this.camera);
         TransformationContext.INSTANCE.scene.visible = false;
         this.renderer.autoClear = true;
-        this.gizmo.update();
-        this.gizmo.render();
+        if (!this.isLooking) {
+            this.gizmo.update();
+            this.gizmo.render();
+        }
         requestAnimationFrame(this.update);
     }
 
@@ -250,6 +281,16 @@ class RenderingContext {
 
     shouldControlsBeOn = () => {
         return !this.pressed.has('Control') && !this.pressed.has('Alt') && !this.isDraggingObject;
+    }
+
+    handleWheel = (ev: WheelEvent) => {
+        if (this.isLooking) {
+            if (ev.deltaY > 0) {
+                this.flySpeed /= 1.1;
+            } else if (ev.deltaY < 0) {
+                this.flySpeed *= 1.1;
+            }
+        }
     }
 
     handleBlur = () => {
@@ -401,6 +442,10 @@ class RenderingContext {
     }
 
     handleMouseUp = (ev: MouseEvent) => {
+        if (this.isLooking) {
+            // document.exitPointerLock();
+        }
+        this.isLooking = false;
         if (!this.isDragging[ev.button]) {
             const mesh = this.lastMeshIntersect?.intersect.object as MeshObject;
             if (mesh && !(mesh as any).disableMouseEvents) {
@@ -437,6 +482,19 @@ class RenderingContext {
 
     handleMouseMove = (ev: MouseEvent) => {
         this.lastMouseMove = ev;
+        if (this.controls.enabled && this.isMouseDown[2]) {
+            if (!this.isLooking) {
+                // this.canvasContainer.requestPointerLock();
+            }
+            this.isLooking = true;
+            this.camera.rotation.reorder('YXZ');
+            this.camera.rotation.y -= ev.movementX * 0.01;
+            this.camera.rotation.x -= ev.movementY * 0.01;
+            this.camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.camera.rotation.x));
+            const forward = new THREE.Vector3();
+            this.camera.getWorldDirection(forward);
+            this.controls.target = this.camera.position.clone().add(forward.multiplyScalar(100));
+        }
         for (let i = 0; i < this.isMouseDown.length; i++) {
             if (this.isMouseDown[i]) {
                 this.isDragging[i] = true;
@@ -485,36 +543,6 @@ class RenderingContext {
                 }
             }
         }
-    }
-
-    handleCameraRotationFromUi = (ev: any) => {
-        this.camera.rotation.reorder('YXZ');
-        const direction = new THREE.Vector3(0, 0, 1).applyEuler(
-            new THREE.Euler(
-                THREE.MathUtils.degToRad(ev.detail.x), 
-                THREE.MathUtils.degToRad(ev.detail.y), 
-                THREE.MathUtils.degToRad(ev.detail.z), 'YXZ'));
-        const distance = this.camera.position.sub(this.controls.target).length();
-        const newPosition = this.controls.target.clone().add(direction.multiplyScalar(distance));
-        const oldPosition =  this.camera.position.clone();
-        const oldRotation =  this.camera.rotation.clone();
-        this.camera.position.copy(newPosition);
-        this.camera.rotation.set(0, 0, 0, 'YXZ');
-        this.camera.lookAt(this.controls.target);
-        const newRotation = this.camera.rotation.clone();
-        this.camera.position.copy(oldPosition);
-        this.camera.rotation.copy(oldRotation);
-        new TWEEN.Tween(this.camera.position).to({
-            x: newPosition.x,
-            y: newPosition.y,
-            z: newPosition.z
-        }, 500).start();
-        // this.camera.rotation.copy(newRotation);
-        new TWEEN.Tween(this.camera.rotation).to({
-            x: newRotation.x,
-            y: newRotation.y,
-            z: newRotation.z
-        }, 1000).start();
     }
 
     handleResize = () => {
