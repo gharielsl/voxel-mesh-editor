@@ -6,7 +6,6 @@
     import ModeBar from '../components/panel/ModeBar.vue';
     import ToolBar from '../components/panel/ToolBar.vue';
     import TransformBar from '../components/panel/TransformBar.vue';
-    import Axis from '../components/panel/Axis.vue';
     import CanvasEditor from '../components/CanvasEditor.vue';
 
     export default defineComponent({
@@ -17,7 +16,6 @@
             ModeBar,
             ToolBar,
             TransformBar,
-            Axis,
             CanvasEditor,
         }
     });
@@ -33,7 +31,6 @@
                 <div class="canvas-container">
                     <ToolBar />
                     <TransformBar />
-                    <Axis />
                     <CanvasEditor />
                 </div>
                 <AssetBrowser />

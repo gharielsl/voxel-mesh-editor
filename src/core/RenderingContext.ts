@@ -6,6 +6,7 @@ import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
 import MouseEvent3d from './MouseEvent3d';
 import VoxelMesh from './VoxelMesh';
+import { ViewportGizmo } from 'three-viewport-gizmo';
 
 const NEAR = 0.01;
 const FAR = 1000;
@@ -40,6 +41,7 @@ class RenderingContext {
     lastMouseMove?: MouseEvent;
     isDraggingObject = false;
     pressed = new Set();
+    gizmo: ViewportGizmo;
     actions: { in: () => boolean, out?: () => void }[] = [];
 
     constructor(canvas: HTMLCanvasElement, canvasContainer: HTMLElement) {
@@ -62,6 +64,11 @@ class RenderingContext {
         this.effectComposter.addPass(this.renderPass);
         this.camera.position.set(100, 100, 100);
         this.controls = new OrbitControls(this.camera, canvas);
+        this.gizmo = new ViewportGizmo(this.camera, this.renderer, {
+            placement: 'bottom-right',
+            container: this.canvasContainer
+        });
+        this.gizmo.attachControls(this.controls);
         this.clock = new THREE.Clock(true);
         this.handleResize();
         this.createEvents();
@@ -145,6 +152,8 @@ class RenderingContext {
         this.renderer.render(this.topLevel, this.camera);
         TransformationContext.INSTANCE.scene.visible = false;
         this.renderer.autoClear = true;
+        this.gizmo.update();
+        this.gizmo.render();
         requestAnimationFrame(this.update);
     }
 
