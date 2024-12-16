@@ -32,7 +32,7 @@ import { VoxelMaterial } from '../../types/default';
         mounted() {
             document.addEventListener('mouseup', this.mouseup);
             document.addEventListener('mousemove', this.resize);
-            state.selectedMaterial = this.materials[0];
+            state.selectedMaterial = state.materials[0];
             const bottomSection = this.$refs.bottomSection as HTMLElement;
             const editor = this.$refs.editor as HTMLElement;
             if (bottomSection && editor) {
@@ -46,7 +46,7 @@ import { VoxelMaterial } from '../../types/default';
         data() {
             return {
                 isResizing: false,
-                materials: [{ color: 0xffffff } as unknown as VoxelMaterial] as VoxelMaterial[]
+                state
             };
         }
     });
@@ -66,7 +66,7 @@ import { VoxelMaterial } from '../../types/default';
             </div>
             <div class="visual-browser-container">
                 <div class="browser-tools">
-                    <div @click="materials.push({ color: '#ffffff' })" class="browser-tools-add">Add +</div>
+                    <div @click="state.materials.push({ color: '#ffffff' })" class="browser-tools-add">Add +</div>
                     <div class="browser-tools-title">Material Browser</div>
                     <div class="browser-tools-search">
                         <input placeholder="Filter" type="text">
@@ -77,7 +77,7 @@ import { VoxelMaterial } from '../../types/default';
                 </div>
                 <div ref="bottomSection" class="visual-browser" style="height: 256px;">
                     <div class="visual-browser-items">
-                        <MaterialItem v-for="(material, index) of materials" :index="index" :material="material" />
+                        <MaterialItem v-for="(material, index) of state.materials" :index="index" :material="material" />
                     </div>
                 </div>
             </div>

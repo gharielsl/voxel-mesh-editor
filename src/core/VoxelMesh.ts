@@ -361,6 +361,9 @@ class VoxelMesh extends MeshObject {
                 }
             }
         }
+        copy.marchCubes = this.marchCubes;
+        copy.smoothNormals = this.smoothNormals;
+        copy.smoothGeometry = this.smoothGeometry;
         copy.update();
         return copy;
     }

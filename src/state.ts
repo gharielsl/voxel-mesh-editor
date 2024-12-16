@@ -31,6 +31,7 @@ export type SharedState = {
     renderingContextProxy?: RenderingContext,
     fullscreen: boolean,
     pushAction: (action: { in: () => boolean, out?: () => void }) => void,
+    materials: VoxelMaterial[],
     selectedMaterial?: VoxelMaterial
 }
 
@@ -59,5 +60,6 @@ export const state = reactive<SharedState>({
     baseUrl: '/voxel-mesh-editor',
     cursorShape: 'initial',
     fullscreen: document.fullscreenElement !== null,
-    pushAction: () => { }
+    pushAction: () => { },
+    materials: [{ color: 0xffffff }]
 });

@@ -3,6 +3,7 @@ import { defineComponent } from 'vue';
 import { Vue3ColorPicker } from '@cyhnkckali/vue3-color-picker';
 import ImageUpload from '../input/ImageUpload.vue';
 import { state } from '../../state';
+import { VoxelMaterial } from '../../types/default';
 
 export default defineComponent({
     components: {
@@ -26,7 +27,7 @@ export default defineComponent({
 
 <template>
     <div class="material-editor">
-        <div class="material-editor-title">Material 1</div>
+        <div class="material-editor-title">Selected - Material {{ state.materials.indexOf(state.selectedMaterial as VoxelMaterial) }}</div>
     </div>
     <div v-if="state.selectedMaterial" class="material-properties">
         <div :class="{'object-option-group': true, 'color': true, 'collapse': !colorOpen}" style="margin-top: 8px;">
