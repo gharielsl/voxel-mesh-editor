@@ -57,7 +57,7 @@ class VoxelMesh extends MeshObject {
         this.addHoverEvent((ev) => {
             const sphere = this.sphere as THREE.Mesh;
             const cube = this.cube as THREE.Mesh;
-            if (state.currentMode !== 'sculpt') {
+            if (state.currentMode !== 'sculpt' || state.renderingContext()?.isLooking) {
                 sphere.visible = false;
                 cube.visible = false;
                 return;
@@ -72,6 +72,7 @@ class VoxelMesh extends MeshObject {
             }
             sphere.visible = state.brushShape === 'round';
             cube.visible = state.brushShape === 'square';
+
             let position = this.worldToLocal(ev.intersect.point);
 
             position = position.add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).floor().addScalar(0.5);

@@ -147,7 +147,10 @@ class RenderingContext {
         if (isFlying) {
             this.controls.target = this.camera.position.clone().add(unscaledForward.multiplyScalar(100));
         }
-        if (this.lastMouseMove) {
+        if (!this.isLooking) {
+            this.controls.update();
+        }
+        if (this.lastMouseMove && !isFlying) {
             let hover = this.intersectObject(this.lastMouseMove.offsetX, this.lastMouseMove.offsetY);
             this.clickableObjects.forEach((mesh) => {
                 if (!hover) {
@@ -170,9 +173,6 @@ class RenderingContext {
             }
         }
         
-        if (!this.isLooking) {
-            this.controls.update();
-        }
         TransformationContext.INSTANCE.update(this.camera);
         // this.camera.rotation.reorder('YXZ');
         TransformationContext.INSTANCE.scene.visible = false;
@@ -459,6 +459,8 @@ class RenderingContext {
             this.controls.dispose();
             this.controls = new OrbitControls(this.camera, this.canvas as any);
             this.controls.target = prevControls.target;
+            this.gizmo.detachControls();
+            this.gizmo.attachControls(this.controls);
         }
         this.isLooking = false;
         if (!this.isDragging[ev.button]) {
@@ -509,8 +511,8 @@ class RenderingContext {
             }
             this.isLooking = true;
             this.camera.rotation.reorder('YXZ');
-            this.camera.rotation.y -= ev.movementX * 0.01;
-            this.camera.rotation.x -= ev.movementY * 0.01;
+            this.camera.rotation.y -= ev.movementX * 0.0065;
+            this.camera.rotation.x -= ev.movementY * 0.0065;
             this.camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.camera.rotation.x));
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
