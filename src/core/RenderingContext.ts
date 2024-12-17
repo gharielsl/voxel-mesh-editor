@@ -22,6 +22,7 @@ class RenderingContext {
     clock: THREE.Clock;
     grid10?: THREE.GridHelper;
     grid40?: THREE.GridHelper;
+    grid?: THREE.Group;
     lineX?: THREE.Line;
     lineZ?: THREE.Line;
     ghostLight = new THREE.PointLight(0xffffff, 10, 10000, 0.25);
@@ -175,14 +176,19 @@ class RenderingContext {
         TransformationContext.INSTANCE.update(this.camera);
         // this.camera.rotation.reorder('YXZ');
         TransformationContext.INSTANCE.scene.visible = false;
-        this.renderer.clearDepth();
+        // this.renderer.clearDepth();
+
+
+        this.renderer.autoClear = false;
         this.effectComposter.render();
         this.renderer.clearDepth();
-        this.renderer.autoClear = false;
+
         TransformationContext.INSTANCE.scene.visible = TransformationContext.INSTANCE.scene.userData.visible;
         this.renderer.render(this.topLevel, this.camera);
         TransformationContext.INSTANCE.scene.visible = false;
+
         this.renderer.autoClear = true;
+        
         if (!this.isLooking) {
             this.gizmo.update();
             this.gizmo.render();
@@ -433,7 +439,12 @@ class RenderingContext {
         ev3d.intersect = closestIntersect;
         this.lastMeshIntersect = ev3d;
         this.lastMeshIntersect.isFirstMovement = true;
-        const object = (closestIntersect.object as MeshObject);
+        let object = (closestIntersect.object as MeshObject);
+        if (!object.isMeshObject && object.userData.meshObject) {
+            object = object.userData.meshObject;
+        } else if (!object.isMeshObject) {
+            return;
+        }
         object.invokeMouseDownEvent(ev3d);
         if (object.draggable) {
             // this.controls.enabled = false;
@@ -447,9 +458,15 @@ class RenderingContext {
         }
         this.isLooking = false;
         if (!this.isDragging[ev.button]) {
-            const mesh = this.lastMeshIntersect?.intersect.object as MeshObject;
+            let mesh = this.lastMeshIntersect?.intersect.object as MeshObject | undefined;
+            if (!mesh?.isMeshObject && mesh?.userData?.meshObject) {
+                mesh = mesh.userData.meshObject;
+            } else if (!mesh?.isMeshObject) {
+                mesh = undefined;
+            }
+            
             if (mesh && !(mesh as any).disableMouseEvents) {
-                mesh?.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
+                mesh.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
                 if (!mesh.internal && state.currentMode === 'object') {
                     if (!ev.shiftKey) {
                         this.unselectAll();
@@ -596,6 +613,7 @@ class RenderingContext {
 
     createGrid = () => {
         const grid = new THREE.Group();
+        this.grid = grid;
         this.scene.add(grid);
         this.scene.fog = new THREE.Fog(new THREE.Color(0.13, 0.13, 0.13), 0.01, 1000);
         this.grid10 = new THREE.GridHelper(FAR * 10, FAR - 1, new THREE.Color(0x333333), new THREE.Color(0x333333));

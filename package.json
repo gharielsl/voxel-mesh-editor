@@ -13,6 +13,7 @@
     "bootstrap-icons": "^1.11.3",
     "splitpanes": "^3.1.5",
     "three": "^0.169.0",
+    "three-custom-shader-material": "^6.2.0",
     "three-viewport-gizmo": "^2.0.2",
     "tween": "^0.9.0",
     "urljoin": "^0.1.5",
