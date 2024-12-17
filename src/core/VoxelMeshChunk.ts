@@ -197,9 +197,7 @@ class VoxelMeshChunk extends THREE.Mesh {
         for (const [x, _] of Object.entries(this.data)) {
             for (const [y, _] of Object.entries(this.data[x])) {
                 for (const [z, voxel] of Object.entries(this.data[x][y])) {
-                    if (+x >= b && +z >= b && +x < s && +z < s) {
-                        copy.setVoxel(+x - b, +y - b, +z - b, voxel as number);
-                    }
+                    copy.setDirectVoxel(+x, +y - VoxelMeshChunk.CHUNK_HEIGHT / 2, +z, voxel as number);
                 }
             }
         }

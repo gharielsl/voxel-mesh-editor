@@ -322,17 +322,22 @@ class VoxelMesh extends MeshObject {
         copy.position.copy(this.position);
         copy.scale.copy(this.scale);
         copy.rotation.copy(this.rotation);
-        // for (const [x, _] of Object.entries(this.data)) {
-        //     for (const [y, _] of Object.entries(this.data[x])) {
-        //         for (const [z, voxel] of Object.entries(this.data[x][y])) {
-        //             copy.setVoxel(+x, +y, +z, voxel as number);
-        //         }
-        //     }
-        // }
-        // copy.marchCubes = this.marchCubes;
-        // copy.smoothNormals = this.smoothNormals;
-        // copy.smoothGeometry = this.smoothGeometry;
-        // copy.update();
+        for (const [x, _] of Object.entries(this.chunks)) {
+            for (const [z, chunk] of Object.entries(this.chunks[x])) {
+                if (chunk instanceof VoxelMeshChunk) {
+                    const chunkClone = chunk.makeCopy(copy);
+                    if (!copy.chunks[x]) copy.chunks[x] = { };
+                    if (!copy.chunks[x][z]) copy.chunks[x][z] = { };
+                    chunkClone.needsUpdate = true;
+                    copy.chunks[x][z] = chunkClone;
+                    copy.add(chunkClone);
+                }
+            }
+        }
+        copy.marchCubes = this.marchCubes;
+        copy.smoothNormals = this.smoothNormals;
+        copy.smoothGeometry = this.smoothGeometry;
+        copy.update();
         return copy;
     }
 }
