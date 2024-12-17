@@ -164,16 +164,18 @@ class VoxelMesh extends MeshObject {
 
     mouseUp = (ev: MouseEvent) => {
         if (this.selectFirstPosition && this.selectSecondPosition && this.isSelecting) {
-            const min = new THREE.Vector3(
+            let min = new THREE.Vector3(
                 Math.min(this.selectFirstPosition.x, this.selectSecondPosition.x),
                 Math.min(this.selectFirstPosition.y, this.selectSecondPosition.y),
                 Math.min(this.selectFirstPosition.z, this.selectSecondPosition.z),
             );
-            const max = new THREE.Vector3(
+            let max = new THREE.Vector3(
                 Math.max(this.selectFirstPosition.x, this.selectSecondPosition.x),
                 Math.max(this.selectFirstPosition.y, this.selectSecondPosition.y),
                 Math.max(this.selectFirstPosition.z, this.selectSecondPosition.z),
             );
+            min = min.floor();
+            max = max.floor();
             const originalVoxels: any = { };
             for (let x = min.x; x <= max.x; x++) {
                 for (let y = min.y; y <= max.y; y++) {
@@ -258,14 +260,18 @@ class VoxelMesh extends MeshObject {
     update = () => {
         const needsUpdate = this.previousMarchCubes !== this.marchCubes ||
             this.previousSmoothNormals !== this.smoothGeometry ||
-            this.previousSmoothGeometry !== this.previousSmoothGeometry
+            this.previousSmoothGeometry !== this.previousSmoothGeometry;
+        const borderUpdateSet = new Set<VoxelMeshChunk>();
         for (const [x, _] of Object.entries(this.chunks)) {
             for (const [z, chunk] of Object.entries(this.chunks[x])) {
                 if (chunk instanceof VoxelMeshChunk && (chunk.needsUpdate || needsUpdate)) {
-                    chunk.update(false, this.marchCubes, this.smoothNormals, this.smoothGeometry);
+                    chunk.update(false, borderUpdateSet, this.marchCubes, this.smoothNormals, this.smoothGeometry);
                 }
             }
         }
+        borderUpdateSet.forEach((chunk) => {
+            chunk.update(true, borderUpdateSet, this.marchCubes, this.smoothNormals, this.smoothGeometry);
+        })
         this.previousMarchCubes = this.marchCubes;
         this.previousSmoothNormals = this.smoothGeometry;
         this.previousSmoothGeometry = this.previousSmoothGeometry;
@@ -305,6 +311,10 @@ class VoxelMesh extends MeshObject {
         posZ = posZ < 0 ? posZ + VoxelMeshChunk.CHUNK_SIZE : posZ;
 
         return this.chunks[chunkX]?.[chunkZ]?.getVoxel(posX, y, posZ) || 0;
+    }
+
+    getChunk = (x: number, z: number) => {
+        return this.chunks[x]?.[z];
     }
 
     clone() {

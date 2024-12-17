@@ -6,11 +6,12 @@ import { createVoxelMaterial } from "./voxel-shader";
 
 class VoxelMeshChunk extends THREE.Mesh {
     static CHUNK_BORDER_SIZE = 3;
-    static CHUNK_SIZE = 16;
-    static CHUNK_HEIGHT = 128;
+    static CHUNK_SIZE = 10;
+    static CHUNK_HEIGHT = 256;
     static CHUNK_SIZE_WITH_BORDER = VoxelMeshChunk.CHUNK_SIZE + VoxelMeshChunk.CHUNK_BORDER_SIZE * 2;
     x: number = 0;
     z: number = 0;
+    voxelMesh: VoxelMesh;
     borders: VoxelMeshChunk[] = [];
     borderNeedsUpdate: boolean[] = [];
     needsUpdate = false;
@@ -18,7 +19,8 @@ class VoxelMeshChunk extends THREE.Mesh {
     
     constructor(voxelMesh: VoxelMesh, x: number, z: number) {
         super(new THREE.BoxGeometry(0, 0), createVoxelMaterial(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE));
-        this.position.set(x * VoxelMeshChunk.CHUNK_SIZE - VoxelMeshChunk.CHUNK_BORDER_SIZE, 0, z * VoxelMeshChunk.CHUNK_SIZE - VoxelMeshChunk.CHUNK_BORDER_SIZE);
+        this.position.set(x * VoxelMeshChunk.CHUNK_SIZE - VoxelMeshChunk.CHUNK_BORDER_SIZE, -VoxelMeshChunk.CHUNK_HEIGHT / 2, z * VoxelMeshChunk.CHUNK_SIZE - VoxelMeshChunk.CHUNK_BORDER_SIZE);
+        this.voxelMesh = voxelMesh;
         this.userData.voxelMesh = voxelMesh;
         this.userData.meshObject = voxelMesh;
         this.x = x;
@@ -26,10 +28,93 @@ class VoxelMeshChunk extends THREE.Mesh {
     }
 
     updateBorders = () => {
+        this.borders[0] = this.voxelMesh.getChunk(this.x + 1, this.z);
+		this.borders[1] = this.voxelMesh.getChunk(this.x - 1, this.z);
+		this.borders[2] = this.voxelMesh.getChunk(this.x, this.z + 1);
+		this.borders[3] = this.voxelMesh.getChunk(this.x, this.z - 1);
+		this.borders[4] = this.voxelMesh.getChunk(this.x + 1, this.z + 1);
+		this.borders[5] = this.voxelMesh.getChunk(this.x + 1, this.z - 1);
+		this.borders[6] = this.voxelMesh.getChunk(this.x - 1, this.z + 1);
+		this.borders[7] = this.voxelMesh.getChunk(this.x - 1, this.z - 1);
 
+        const B = VoxelMeshChunk.CHUNK_BORDER_SIZE;
+        const S = VoxelMeshChunk.CHUNK_SIZE;
+        const SB = VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER;
+        const H = VoxelMeshChunk.CHUNK_HEIGHT;
+
+        for (let a = 0; a < SB - B; a++) {
+            for (let y = -H / 2; y < H / 2; y++) {
+                for (let i = 0; i < B; i++) {
+                    let oa = B - a - 1;
+					let ri = B - i - 1;
+                    if (a < B) { // corners
+                        if (this.borders[4]) { // pxpz
+                            if (this.borders[4].getDirectVoxel(oa, y, ri) !== this.getVoxel(S - a - 1, y, S - i - 1)) {
+                                this.borderNeedsUpdate[4] = true;
+                                this.borders[4].setDirectVoxel(oa, y, ri, this.getVoxel(S - a - 1, y, S - i - 1));
+                            }
+                            this.setDirectVoxel(SB - oa - 1, y, SB - ri - 1, this.borders[4].getVoxel(a, y, i));
+                        }
+                        if (this.borders[5]) { // pxnz
+                            if (this.borders[5].getDirectVoxel(oa, y, SB - ri - 1) !== this.getVoxel(S - a - 1, y, i)) {
+                                this.borderNeedsUpdate[5] = true;
+                                this.borders[5].setDirectVoxel(oa, y, SB - ri - 1, this.getVoxel(S - a - 1, y, i));
+                            }
+                            this.setDirectVoxel(SB - oa - 1, y, ri, this.borders[5].getVoxel(a, y, S - i - 1));
+                        }
+                        if (this.borders[6]) { // nxpz
+                            if (this.borders[6].getDirectVoxel(SB - oa - 1, y, ri) !== this.getVoxel(a, y, S - i - 1)) {
+                                this.borderNeedsUpdate[6] = true;
+                                this.borders[6].setDirectVoxel(SB - oa - 1, y, ri, this.getVoxel(a, y, S - i - 1));
+                            }
+                            this.setDirectVoxel(oa, y, SB - ri - 1, this.borders[6].getVoxel(S - a - 1, y, i));
+                        }
+                        if (this.borders[7]) { // nxnz
+                            if (this.borders[7].getDirectVoxel(SB - oa - 1, y, SB - ri - 1) !== this.getVoxel(a, y, i)) {
+                                this.borderNeedsUpdate[7] = true;
+                                this.borders[7].setDirectVoxel(SB - oa - 1, y, SB - ri - 1, this.getVoxel(a, y, i));
+                            }
+                            this.setDirectVoxel(oa, y, ri, this.borders[7].getVoxel(S - a - 1, y, S - i - 1));
+                        }
+                        continue;
+                    }
+                    // edges
+                    ri = B - i;
+					oa = a - B;
+                    if (this.borders[0]) { // px
+                        if (this.borders[0].getDirectVoxel(ri - 1, y, oa + B) !== this.getVoxel(S - i - 1, y, oa)) {
+                            this.borderNeedsUpdate[0] = true;
+                            this.borders[0].setDirectVoxel(ri - 1, y, oa + B, this.getVoxel(S - i - 1, y, oa));
+                        }
+                        this.setDirectVoxel(SB - ri, y, oa + B, this.borders[0].getVoxel(i, y, oa));
+                    }
+                    if (this.borders[1]) { // nx
+                        if (this.borders[1].getDirectVoxel(SB - ri, y, oa + B) !== this.getVoxel(i, y, oa)) {
+                            this.borderNeedsUpdate[1] = true;
+                            this.borders[1].setDirectVoxel(SB - ri, y, oa + B, this.getVoxel(i, y, oa));
+                        }
+                        this.setDirectVoxel(ri - 1, y, oa + B, this.borders[1].getVoxel(S - i - 1, y, oa));
+                    }
+                    if (this.borders[2]) { // pz
+                        if (this.borders[2].getDirectVoxel(oa + B, y, ri - 1) !== this.getVoxel(oa, y, S - i - 1)) {
+                            this.borderNeedsUpdate[2] = true;
+                            this.borders[2].setDirectVoxel(oa + B, y, ri - 1, this.getVoxel(oa, y, S - i - 1));
+                        }
+                        this.setDirectVoxel(oa + B, y, SB - ri, this.borders[2].getVoxel(oa, y, i));
+                    }
+                    if (this.borders[3]) { // nz
+                        if (this.borders[3].getDirectVoxel(oa + B, y, SB - ri) !== this.getVoxel(oa, y, i)) {
+                            this.borderNeedsUpdate[3] = true;
+                            this.borders[3].setDirectVoxel(oa + B, y, SB - ri, this.getVoxel(oa, y, i));
+                        }
+                        this.setDirectVoxel(oa + B, y, ri - 1, this.borders[3].getVoxel(oa, y, S - i - 1));
+                    }
+                }
+            }
+        }
     }
 
-    update = (selfOnly: boolean, marchCubes: boolean, smoothNormals: boolean, smoothGeometry: boolean) => {
+    update = (selfOnly: boolean, borderUpdateSet: Set<VoxelMeshChunk>, marchCubes: boolean, smoothNormals: boolean, smoothGeometry: boolean) => {
         if (!selfOnly) {
             this.updateBorders();
         }
@@ -75,27 +160,34 @@ class VoxelMeshChunk extends THREE.Mesh {
 
         for (let i = 0; i < 8 && !selfOnly; i++) {
             if (this.borders[i] && this.borderNeedsUpdate[i]) {
-                this.borders[i].update(true, marchCubes, smoothNormals, smoothGeometry);
+                borderUpdateSet.add(this.borders[i]);
                 this.borderNeedsUpdate[i] = false;
             }
         }
     }
 
     setVoxel = (x: number, y: number, z: number, voxel: number) => {
-        if (x < 0 || y < 0 || z < 0 || x >= VoxelMeshChunk.CHUNK_SIZE || y >= VoxelMeshChunk.CHUNK_HEIGHT || z >= VoxelMeshChunk.CHUNK_SIZE)
-        {
-            return;
-        }
         const b = VoxelMeshChunk.CHUNK_BORDER_SIZE;
         if (!this.data[x + b]) this.data[x + b] = { };
-        if (!this.data[x + b][y]) this.data[x + b][y] = { };
-        this.data[x + b][y][z + b] = voxel;
+        if (!this.data[x + b][y + VoxelMeshChunk.CHUNK_HEIGHT / 2]) this.data[x + b][y + VoxelMeshChunk.CHUNK_HEIGHT / 2] = { };
+        this.data[x + b][y + VoxelMeshChunk.CHUNK_HEIGHT / 2][z + b] = voxel;
+        this.needsUpdate = true;
+    }
+
+    setDirectVoxel = (x: number, y: number, z: number, voxel: number) => {
+        if (!this.data[x]) this.data[x] = { };
+        if (!this.data[x][y + VoxelMeshChunk.CHUNK_HEIGHT / 2]) this.data[x][y + VoxelMeshChunk.CHUNK_HEIGHT / 2] = { };
+        this.data[x][y + VoxelMeshChunk.CHUNK_HEIGHT / 2][z] = voxel;
         this.needsUpdate = true;
     }
 
     getVoxel = (x: number, y: number, z: number) => {
         const b = VoxelMeshChunk.CHUNK_BORDER_SIZE;
-        this.data[x + b]?.[y]?.[z + b] || 0;
+        return this.data[x + b]?.[y + VoxelMeshChunk.CHUNK_HEIGHT / 2]?.[z + b] || 0;
+    }
+
+    getDirectVoxel = (x: number, y: number, z: number) => {
+        return this.data[x]?.[y + VoxelMeshChunk.CHUNK_HEIGHT / 2]?.[z] || 0;
     }
 
     makeCopy = (forMesh: VoxelMesh) => {
