@@ -55,5 +55,5 @@ export const state = reactive<SharedState>({
     cursorShape: 'initial',
     fullscreen: document.fullscreenElement !== null,
     pushAction: () => { },
-    materials: [{ color: 0xffffff }]
+    materials: [{ color: '#ffffff' }]
 });

@@ -1,7 +1,7 @@
 import { ColorRepresentation } from "three"
 
 export type VoxelMaterial = {
-    color?: ColorRepresentation,
+    color?: string,
     texture?: string,
     normal?: string
 }

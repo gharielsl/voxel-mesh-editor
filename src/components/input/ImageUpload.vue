@@ -2,6 +2,9 @@
 import { defineComponent } from 'vue';
 
 export default defineComponent({
+    props: {
+        value: String
+    },
     methods: {
         upload() {
             const input = document.createElement("input");
@@ -14,8 +17,7 @@ export default defineComponent({
                 }
                 const reader = new FileReader();
                 reader.onload = () => {
-                    this.src = reader.result as string;
-                    this.$emit('selectImage', this.src);
+                    this.$emit('selectImage', reader.result as string);
                 }
                 reader.onerror = () => {
 
@@ -28,18 +30,13 @@ export default defineComponent({
     },
     emits: {
         selectImage: (dataUri: string) => { }
-    },
-    data() {
-        return {
-            src: undefined as string | undefined
-        }
     }
 });
 </script>
 
 <template>
     <div @click="upload" class="input">
-        <img v-if="src" :src="src" alt="">
+        <img v-if="value" :src="value" alt="">
     </div>
 </template>
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, nextTick } from 'vue';
 import { Vue3ColorPicker } from '@cyhnkckali/vue3-color-picker';
 import ImageUpload from '../input/ImageUpload.vue';
 import { state } from '../../state';
@@ -11,14 +11,39 @@ export default defineComponent({
         ImageUpload
     },
     methods: {
-
+        materialUpdate() {
+            window.dispatchEvent(new CustomEvent("materialedit"));
+        },
+        colorChange(value: string) {
+            if (state.selectedMaterial) {
+                state.selectedMaterial.color = value;
+            }
+        },
+        selectTexture(value: string) {
+            if (state.selectedMaterial) {
+                state.selectedMaterial.texture = value;
+                this.materialUpdate();
+            }
+        },
+        selectNormal(value: string) {
+            if (state.selectedMaterial) {
+                state.selectedMaterial.normal = value;
+                this.materialUpdate();
+            }
+        }
     },
     data() {
         return {
             colorOpen: false,
             textureOpen: false,
             normalOpen: false,
+            nextTick,
             state
+        }
+    },
+    setup() {
+        return {
+            lastMaterialUpdate: 0
         }
     }
 });
@@ -35,8 +60,8 @@ export default defineComponent({
                 <i :class="colorOpen ? 'bi bi-caret-down-fill' : 'bi bi-caret-right-fill'"></i>
                 <h5 style="margin-left: 8px;">Color</h5>
             </div>
-            <div class="material-property">
-                <Vue3ColorPicker mode="solid" :showPickerMode="false" :showColorList="false" :showEyeDrop="false" type="RGBA" theme="dark" :showAlpha="false" style="width: 256px"/>
+            <div @mouseup="materialUpdate" @keyup="materialUpdate" class="material-property">
+                <Vue3ColorPicker @update:modelValue="colorChange" :modelValue="state.selectedMaterial.color || '#ffffff'" mode="solid" :showPickerMode="false" :showColorList="false" :showEyeDrop="false" type="RGBA" theme="dark" :showAlpha="false" style="width: 256px"/>
             </div>
         </div>
         <div :class="{'object-option-group': true, 'collapse': !textureOpen}" style="margin-top: 8px;">
@@ -45,7 +70,7 @@ export default defineComponent({
                 <h5 style="margin-left: 8px;">Texture</h5>
             </div>
             <div class="material-property">
-                <ImageUpload />
+                <ImageUpload :value="state.selectedMaterial?.texture" @selectImage="selectTexture" />
             </div>
         </div>
         <div :class="{'object-option-group': true, 'collapse': !normalOpen}" style="margin-top: 8px;margin-bottom: 8px;">
@@ -54,7 +79,7 @@ export default defineComponent({
                 <h5 style="margin-left: 8px;">Normal Texture</h5>
             </div>
             <div class="material-property">
-                <ImageUpload />
+                <ImageUpload :value="state.selectedMaterial?.normal" @selectImage="selectNormal" />
             </div>
         </div>
     </div>
@@ -110,6 +135,7 @@ export default defineComponent({
 
     .group-title {
         height: 32px;
+        margin-bottom: 4px;
         font-weight: bold;
         display: flex;
         align-items: center;
