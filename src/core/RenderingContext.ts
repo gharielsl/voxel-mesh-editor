@@ -1,6 +1,6 @@
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
 import * as THREE from 'three';
-import { EffectComposer, FXAAShader, OrbitControls, OutlinePass, RenderPass, ShaderPass, SAOPass, RectAreaLightUniformsLib } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, FXAAShader, OutlinePass, RenderPass, ShaderPass, SAOPass, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { state } from '../state';
 import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
@@ -42,7 +42,7 @@ class RenderingContext {
     lastMouseMove?: MouseEvent;
     isDraggingObject = false;
     pressed = new Set();
-    flySpeed = 1;
+    flySpeed = 0.25;
     gizmo: ViewportGizmo;
     isLooking = false;
     actions: { in: () => boolean, out?: () => void }[] = [];
@@ -66,7 +66,7 @@ class RenderingContext {
         this.renderPass = new RenderPass(this.scene, this.camera);
         this.effectComposter.addPass(this.renderPass);
         this.camera.position.set(100, 100, 100);
-        this.controls = new OrbitControls(this.camera, canvas);
+        this.controls = new OrbitControls(this.camera, canvas as any);
         this.gizmo = new ViewportGizmo(this.camera, this.renderer, {
             placement: 'bottom-right',
             container: this.canvasContainer,
@@ -454,7 +454,11 @@ class RenderingContext {
 
     handleMouseUp = (ev: MouseEvent) => {
         if (this.isLooking) {
-            // document.exitPointerLock();
+            document.exitPointerLock();
+            const prevControls = this.controls;
+            this.controls.dispose();
+            this.controls = new OrbitControls(this.camera, this.canvas as any);
+            this.controls.target = prevControls.target;
         }
         this.isLooking = false;
         if (!this.isDragging[ev.button]) {
@@ -501,7 +505,7 @@ class RenderingContext {
         this.lastMouseMove = ev;
         if (this.controls.enabled && this.isMouseDown[2]) {
             if (!this.isLooking) {
-                // this.canvasContainer.requestPointerLock();
+                this.canvasContainer.requestPointerLock();
             }
             this.isLooking = true;
             this.camera.rotation.reorder('YXZ');
