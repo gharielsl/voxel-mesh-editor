@@ -3,6 +3,7 @@ import VoxelMesh from "./VoxelMesh";
 import { marchCube } from "./marching-cubes/marching-cubes";
 import { smoothGeometry as createSmoothGeometry } from "./smooth-geometry";
 import { createVoxelMaterial } from "./voxel-shader";
+import MeshObject from "./MeshObject";
 
 class VoxelMeshChunk extends THREE.Mesh {
     static CHUNK_BORDER_SIZE = 3;
@@ -16,6 +17,8 @@ class VoxelMeshChunk extends THREE.Mesh {
     borderNeedsUpdate: boolean[] = [];
     needsUpdate = false;
     data: any = { };
+    wireframeGeometry?: THREE.EdgesGeometry;
+    wireframeMesh: THREE.LineSegments;
     
     constructor(voxelMesh: VoxelMesh, x: number, z: number) {
         super(new THREE.BoxGeometry(0, 0), createVoxelMaterial(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE));
@@ -25,6 +28,12 @@ class VoxelMeshChunk extends THREE.Mesh {
         this.userData.meshObject = voxelMesh;
         this.x = x;
         this.z = z;
+        this.wireframeMesh = new THREE.LineSegments(undefined, new THREE.LineBasicMaterial({ 
+            color: 0, 
+        }));
+        (this.wireframeMesh as any).disableMouseEvents = true;
+        this.wireframeMesh.visible = false;
+        this.add(this.wireframeMesh);
     }
 
     updateBorders = () => {
@@ -122,12 +131,34 @@ class VoxelMeshChunk extends THREE.Mesh {
         this.geometry.dispose();
         const positions: THREE.Vector3[] = [];
         const indices: number[] = [];
-        const uniquePositions = new Map<string, number>();
-
+        let uniquePositions;
+        if (marchCubes) {
+            uniquePositions = new Map<string, number>();
+        } else {
+            uniquePositions = new Map<string, Map<string, number>>();
+        }
         for (let x = 0; x < VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER; x++) {
             for (let y = 0; y < VoxelMeshChunk.CHUNK_HEIGHT; y++) {
                 for (let z = 0; z < VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER; z++) {
-                    if (marchCubes || this.data[x]?.[y]?.[z] || 0 !== 0) {
+                    let inner = true;
+                    if (!marchCubes) {
+                        for (let x1 = -1; x1 <= 1; x1++) {
+                            if (!inner) break;
+                            for (let y1 = -1; y1 <= 1; y1++) {
+                                if (!inner) break;
+                                for (let z1 = -1; z1 <= 1; z1++) {
+                                    if ((this.data[x + x1]?.[y + y1]?.[z + z1] || 0) === 0) {
+                                        inner = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (!marchCubes && inner) {
+                        continue;
+                    }
+                    if (marchCubes || (this.data[x]?.[y]?.[z] || 0) !== 0) {
                         marchCube(
                             new THREE.Vector3(x, y, z), 
                             this.data, 
@@ -156,6 +187,10 @@ class VoxelMeshChunk extends THREE.Mesh {
         this.geometry.setAttribute("position", new THREE.BufferAttribute(positionsArray, 3));
         this.geometry.setIndex(indices.reverse());
         this.geometry.computeVertexNormals();
+
+        this.wireframeGeometry?.dispose();
+        this.wireframeGeometry = new THREE.EdgesGeometry(this.geometry);
+        this.wireframeMesh.geometry = this.wireframeGeometry;
         this.needsUpdate = false;
 
         for (let i = 0; i < 8 && !selfOnly; i++) {

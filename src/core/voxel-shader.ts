@@ -4,6 +4,9 @@ import * as THREE from "three";
 function createVoxelMaterial(chunkSize: number, borderSize: number) {
     return new CustomMaterial({
         baseMaterial: THREE.MeshPhongMaterial,
+        polygonOffset: false,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1,
         vertexShader: `
     varying vec3 fragPosition;
     

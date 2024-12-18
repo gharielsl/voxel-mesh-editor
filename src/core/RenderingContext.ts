@@ -197,6 +197,9 @@ class RenderingContext {
     }
 
     unselectAll() {
+        if (state.currentMode !== 'object') {
+            return;
+        }
         TransformationContext.INSTANCE.setVisible(false);
         TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
             mesh.unselect();
@@ -208,6 +211,9 @@ class RenderingContext {
     }
 
     selectObjects = (objects: MeshObject[]) => {
+        if (state.currentMode !== 'object') {
+            return;
+        }
         objects.forEach((object) => {
             if (!object.selected) {
                 object.select();
@@ -224,6 +230,9 @@ class RenderingContext {
     clipboard: MeshObject[] = [];
 
     copy = () => {
+        if (state.currentMode !== 'object') {
+            return;
+        }
         this.clipboard = [];
         TransformationContext.INSTANCE.selectedObjects.forEach((o) => {
             if (!this.clipboard.includes(o)) {
@@ -233,6 +242,9 @@ class RenderingContext {
     }
 
     paste = () => {
+        if (state.currentMode !== 'object') {
+            return;
+        }
         this.unselectAll();
         this.clipboard.forEach((o) => {
             const copy = o.clone();
@@ -328,6 +340,9 @@ class RenderingContext {
             ev.preventDefault();
         }
         if (ev.code === 'Delete') {
+            if (state.currentMode !== 'object') {
+                return;
+            }
             const toRemove: MeshObject[] = [];
             TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
                 toRemove.push(mesh);
@@ -398,8 +413,6 @@ class RenderingContext {
         mouse.x = (x / this.canvas.clientWidth) * 2 - 1;
         mouse.y = -(y / this.canvas.clientHeight) * 2 + 1;
         rc.setFromCamera(mouse, this.camera);
-        rc.far = 1000;
-        rc.near = 0.0000001;
         const intersects = rc.intersectObjects(this.clickableObjects, true).reverse();
         let closestIntersect = intersects[0];
         for (const intersect of intersects) {
@@ -492,7 +505,7 @@ class RenderingContext {
                         this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                     }
                 }
-            } else {
+            } else if (state.currentMode === 'object') {
                 this.unselectAll();
             }
         }
@@ -660,10 +673,27 @@ class RenderingContext {
             state.gridActive = active;
         }
         state.setCurrentMode = (mode) => {
-            state.currentMode = mode;
-            if (mode !== 'object') {
-                this.unselectAll();
+            if (mode === 'sculpt' && state.selectedObject instanceof VoxelMesh && this.outlinePass) {
+                state.selectedObject.setWireframeVisible(!state.selectedObject.marchCubes);
+                (this.outlinePass as any).previousSelectedObjects = [...this.outlinePass.selectedObjects];
+                this.outlinePass.selectedObjects = [];
+                state.currentMode = mode;
+                // const index = this.outlinePass.selectedObjects.indexOf(state.selectedObject);
+                // if (index > -1) {
+                //     this.outlinePass.selectedObjects.splice(index, 1);
+                // }
+            } else if (mode === 'object') {
+                state.currentMode = mode;
+                if (state.selectedObject instanceof VoxelMesh) {
+                    state.selectedObject.setWireframeVisible(false);
+                }
+                if (this.outlinePass && (this.outlinePass as any).previousSelectedObjects) {
+                    this.outlinePass.selectedObjects = (this.outlinePass as any).previousSelectedObjects;
+                }
             }
+            // if (mode !== 'object') {
+            //     this.unselectAll();
+            // }
         }
         this.ghostLight.position.set(1100, 1000, 900);
         this.nGhostLight.position.set(-900, -1000, -1100);

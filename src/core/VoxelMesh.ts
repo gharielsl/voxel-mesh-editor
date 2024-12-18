@@ -55,6 +55,9 @@ class VoxelMesh extends MeshObject {
         this.add(this.sphere as THREE.Mesh);
 
         this.addHoverEvent((ev) => {
+            if (state.selectedObject?.id !== this.id) {
+                return;
+            }
             const sphere = this.sphere as THREE.Mesh;
             const cube = this.cube as THREE.Mesh;
             if (state.currentMode !== 'sculpt' || state.renderingContext()?.isLooking) {
@@ -118,6 +121,9 @@ class VoxelMesh extends MeshObject {
         });
 
         this.addMouseDownEvent((ev) => {
+            if (state.selectedObject?.id !== this.id) {
+                return;
+            }
             if (ev.altKey) {
                 this.selectButton = ev.button;
                 this.isSelecting = true;
@@ -131,6 +137,9 @@ class VoxelMesh extends MeshObject {
         document.addEventListener('mouseup', this.mouseUp);
 
         this.addHoverOutEvent(() => {
+            if (state.selectedObject?.id !== this.id) {
+                return;
+            }
             const sphere = this.sphere as THREE.Mesh;
             const cube = this.cube as THREE.Mesh;
             sphere.visible = false;
@@ -138,6 +147,9 @@ class VoxelMesh extends MeshObject {
         });
 
         this.addClickListener((ev) => {
+            if (state.selectedObject?.id !== this.id) {
+                return;
+            }
             if (state.currentMode === 'sculpt') {
                 let point = this.worldToLocal(ev.intersect.point);
                 point = point.add(ev.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).floor().addScalar(0.5);
@@ -164,6 +176,9 @@ class VoxelMesh extends MeshObject {
     }
 
     mouseUp = (ev: MouseEvent) => {
+        if (state.selectedObject?.id !== this.id) {
+            return;
+        }
         if (this.selectFirstPosition && this.selectSecondPosition && this.isSelecting) {
             let min = new THREE.Vector3(
                 Math.min(this.selectFirstPosition.x, this.selectSecondPosition.x),
@@ -204,6 +219,17 @@ class VoxelMesh extends MeshObject {
             this.update();
         }
         this.isSelecting = false;
+    }
+
+    setWireframeVisible = (visible: boolean) => {
+        for (const [x, _] of Object.entries(this.chunks)) {
+            for (const [z, chunk] of Object.entries(this.chunks[x])) {
+                if (chunk instanceof VoxelMeshChunk) {
+                    chunk.wireframeMesh.visible = visible;
+                    (chunk.material as THREE.MeshPhongMaterial).polygonOffset = visible;
+                }
+            }
+        }
     }
 
     draw = (position: THREE.Vector3, shape: string, size: number, voxel: number, addUndo = false) => {
@@ -267,11 +293,13 @@ class VoxelMesh extends MeshObject {
             for (const [z, chunk] of Object.entries(this.chunks[x])) {
                 if (chunk instanceof VoxelMeshChunk && (chunk.needsUpdate || needsUpdate)) {
                     chunk.update(false, borderUpdateSet, this.marchCubes, this.smoothNormals, this.smoothGeometry);
+                    chunk.wireframeMesh.visible = !this.marchCubes && state.selectedObject?.id === this.id;
                 }
             }
         }
         borderUpdateSet.forEach((chunk) => {
             chunk.update(true, borderUpdateSet, this.marchCubes, this.smoothNormals, this.smoothGeometry);
+            chunk.wireframeMesh.visible = !this.marchCubes && state.selectedObject?.id === this.id;
         })
         this.previousMarchCubes = this.marchCubes;
         this.previousSmoothNormals = this.smoothGeometry;
