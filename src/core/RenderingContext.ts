@@ -131,17 +131,17 @@ class RenderingContext {
         forward = forward.multiplyScalar(this.flySpeed);
         right = right.multiplyScalar(this.flySpeed);
         let isFlying = false;
-        if (this.pressed.has('w') && this.isLooking) {
+        if (this.pressed.has('KeyW') && this.isLooking) {
             this.camera.position.add(forward);
             isFlying = true;
-        } else if (this.pressed.has('s') && this.isLooking) {
+        } else if (this.pressed.has('KeyS') && this.isLooking) {
             this.camera.position.sub(forward);
             isFlying = true;
         }
-        if (this.pressed.has('d') && this.isLooking) {
+        if (this.pressed.has('KeyD') && this.isLooking) {
             this.camera.position.add(right);
             isFlying = true;
-        } else if (this.pressed.has('a') && this.isLooking) {
+        } else if (this.pressed.has('KeyA') && this.isLooking) {
             this.camera.position.sub(right);
             isFlying = true;
         }
@@ -330,6 +330,7 @@ class RenderingContext {
 
     handleKeyDown = (ev: KeyboardEvent) => {
         this.pressed.add(ev.key);
+        this.pressed.add(ev.code);
         if (ev.key === 'Tab') {
             ev.preventDefault();
         }
@@ -337,6 +338,7 @@ class RenderingContext {
 
     handleKeyUp = (ev: KeyboardEvent) => {
         this.pressed.delete(ev.key);
+        this.pressed.delete(ev.code);
         if (ev.ctrlKey) {
             ev.preventDefault();
         }
