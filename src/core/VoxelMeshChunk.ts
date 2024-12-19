@@ -225,11 +225,11 @@ class VoxelMeshChunk extends THREE.Mesh {
             }
         }
 
-        if (voxelCount === 0) {
-            this.geometry.dispose();
-            (this.material as any).dispose();
-            this.voxelMesh.removeChunk(this.x, this.z);
-        }
+        // if (voxelCount === 0) {
+        //     this.geometry.dispose();
+        //     (this.material as any).dispose();
+        //     this.voxelMesh.removeChunk(this.x, this.z);
+        // }
     }
 
     onBeforeRender(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, geometry: THREE.BufferGeometry, material: THREE.Material, group: THREE.Group): void {

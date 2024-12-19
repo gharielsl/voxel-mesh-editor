@@ -57,13 +57,14 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
     }
 
     void main() {
-        ivec3 voxelPosition = ivec3(fragPosition + 0.5);
-        vec3 localPosition = fragPosition - vec3(voxelPosition);
+        vec3 position = fragPosition + 0.5;
+        ivec3 voxelPosition = ivec3(position);
+        vec3 localPosition = position - vec3(voxelPosition);
 
-        if (fragPosition.x < ${borderSize - 0.001} || fragPosition.x > ${chunkSize + borderSize + 0.001}) {
+        if (position.x < ${borderSize.toFixed(1)} || position.x > float(${chunkSize + borderSize})) {
             discard;
         }
-        if (fragPosition.z < ${borderSize - 0.001} || fragPosition.z > ${chunkSize + borderSize + 0.001}) {
+        if (position.z < ${borderSize.toFixed(1)} || position.z > float(${chunkSize + borderSize})) {
             discard;
         }
 
@@ -75,7 +76,7 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
                 for (int y = -1; y <= 2; y++) {
                     for (int z = -1; z <= 2; z++) {
                         ivec3 currentPosition = voxelPosition + ivec3(x, y, z);
-                        int voxelId = int(texelFetch(dataTexture, ivec2(currentPosition.z * ${chunkSize + borderSize * 2} + currentPosition.x, currentPosition.y), 0).r * 255.0);
+                        int voxelId = getVoxelId(currentPosition);
                         if (voxelId == 0) continue;
                         vec3 color = voxelColor(voxelId);
                         float dist = length(localPosition - vec3(float(x), float(y), float(z)));
