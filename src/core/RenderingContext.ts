@@ -8,7 +8,7 @@ import MouseEvent3d from './MouseEvent3d';
 import VoxelMesh from './VoxelMesh';
 import { ViewportGizmo } from 'three-viewport-gizmo';
 
-const NEAR = 0.01;
+const NEAR = 0.1;
 const FAR = 1000;
 
 class RenderingContext {

@@ -18,7 +18,7 @@ function getConfigIndex(cube: number[]) {
 }
 
 function addCubeFaces(position: THREE.Vector3, positions: THREE.Vector3[], indices: number[], uniquePositions: Map<string, Map<string, number>>) {
-    const cubeGeometry = new THREE.BoxGeometry(1, 1, 1, 1, 1, 1);
+    const cubeGeometry = new THREE.BoxGeometry(0.9999, 0.9999, 0.9999);
     const index = cubeGeometry.index?.array.reverse() as unknown as number[];
     const vertex = cubeGeometry.getAttribute("position").array;
 

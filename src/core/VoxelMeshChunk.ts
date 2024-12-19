@@ -234,9 +234,18 @@ class VoxelMeshChunk extends THREE.Mesh {
 
     onBeforeRender(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, geometry: THREE.BufferGeometry, material: THREE.Material, group: THREE.Group): void {
         super.onBeforeRender(renderer, scene, camera, geometry, material, group);
-        (this.material as THREE.ShaderMaterial).uniforms.dataTexture = {
-            value: this.dataTexture
-        };
+        if (!(this.material as THREE.ShaderMaterial).uniforms.dataTexture) {
+            (this.material as THREE.ShaderMaterial).uniforms.dataTexture = {
+                value: this.dataTexture
+            };
+        }
+        if ((this.material as THREE.ShaderMaterial).uniforms.marchCubes) {
+            (this.material as THREE.ShaderMaterial).uniforms.marchCubes.value = this.voxelMesh.marchCubes ? 1 : 0;
+        } else {
+            (this.material as THREE.ShaderMaterial).uniforms.marchCubes = {
+                value: this.voxelMesh.marchCubes ? 1 : 0
+            };
+        }
     }
 
     setVoxel = (x: number, y: number, z: number, voxel: number) => {
