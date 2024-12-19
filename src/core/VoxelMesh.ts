@@ -93,10 +93,10 @@ class VoxelMesh extends MeshObject {
                 }
                 if (this.marchCubes) {
                     const brushSize = state.brushSize + 1;
-                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1, true);
+                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : state.getCurrentMaterialIndex(), true);
                 } else {
                     const brushSize = state.brushSize - 1;
-                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : 1, true);
+                    this.draw(position, state.brushShape, brushSize, state.isMouseDown[2] ? 0 : state.getCurrentMaterialIndex(), true);
                 }
                 this.lastDragTime = Date.now();
             } else if (this.isSelecting && this.selectFirstPosition) {
@@ -135,6 +135,7 @@ class VoxelMesh extends MeshObject {
         });
 
         document.addEventListener('mouseup', this.mouseUp);
+        window.addEventListener('materialedit', this.materialUpdated);
 
         this.addHoverOutEvent(() => {
             if (state.selectedObject?.id !== this.id) {
@@ -161,10 +162,10 @@ class VoxelMesh extends MeshObject {
                 }
                 if (this.marchCubes) {
                     const brushSize = state.brushSize + 1;
-                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1, true);
+                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : state.getCurrentMaterialIndex(), true);
                 } else {
                     const brushSize = state.brushSize - 1;
-                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : 1, true);
+                    this.draw(point, state.brushShape, brushSize, ev.button === 2 ? 0 : state.getCurrentMaterialIndex(), true);
                 }
             }
         });
@@ -173,6 +174,16 @@ class VoxelMesh extends MeshObject {
     constructor() {
         super(new THREE.BoxGeometry(0, 0), new THREE.MeshStandardMaterial());
         this._init();
+    }
+
+    materialUpdated = () => {
+        for (const [x, _] of Object.entries(this.chunks)) {
+            for (const [z, chunk] of Object.entries(this.chunks[x])) {
+                if (chunk instanceof VoxelMeshChunk) {
+                    chunk.updateMaterial();
+                }
+            }
+        }
     }
 
     mouseUp = (ev: MouseEvent) => {
@@ -199,7 +210,7 @@ class VoxelMesh extends MeshObject {
                         if (!originalVoxels[x]) originalVoxels[x] = { };
                         if (!originalVoxels[x][y]) originalVoxels[x][y] = { };
                         originalVoxels[x][y][z] = this.getVoxel(x, y, z);
-                        this.setVoxel(x, y, z, this.selectButton === 2 ? 0 : 1);
+                        this.setVoxel(x, y, z, this.selectButton === 2 ? 0 : state.getCurrentMaterialIndex());
                     }
                 }
             }
@@ -288,18 +299,19 @@ class VoxelMesh extends MeshObject {
         const needsUpdate = this.previousMarchCubes !== this.marchCubes ||
             this.previousSmoothNormals !== this.smoothGeometry ||
             this.previousSmoothGeometry !== this.previousSmoothGeometry;
+        const shouldWireframeBeVisible = !this.marchCubes && state.selectedObject?.id === this.id && state.currentMode === 'sculpt';
         const borderUpdateSet = new Set<VoxelMeshChunk>();
         for (const [x, _] of Object.entries(this.chunks)) {
             for (const [z, chunk] of Object.entries(this.chunks[x])) {
                 if (chunk instanceof VoxelMeshChunk && (chunk.needsUpdate || needsUpdate)) {
                     chunk.update(false, borderUpdateSet, this.marchCubes, this.smoothNormals, this.smoothGeometry);
-                    chunk.wireframeMesh.visible = !this.marchCubes && state.selectedObject?.id === this.id;
+                    chunk.wireframeMesh.visible = shouldWireframeBeVisible;
                 }
             }
         }
         borderUpdateSet.forEach((chunk) => {
             chunk.update(true, borderUpdateSet, this.marchCubes, this.smoothNormals, this.smoothGeometry);
-            chunk.wireframeMesh.visible = !this.marchCubes && state.selectedObject?.id === this.id;
+            chunk.wireframeMesh.visible = shouldWireframeBeVisible;
         })
         this.previousMarchCubes = this.marchCubes;
         this.previousSmoothNormals = this.smoothGeometry;
@@ -309,6 +321,7 @@ class VoxelMesh extends MeshObject {
     public destoy(): void {
         super.destoy();
         document.removeEventListener('mouseup', this.mouseUp);
+        window.removeEventListener('materialedit', this.materialUpdated);
     }
 
     setVoxel = (x: number, y: number, z: number, voxel: number) => {
@@ -344,6 +357,17 @@ class VoxelMesh extends MeshObject {
 
     getChunk = (x: number, z: number) => {
         return this.chunks[x]?.[z];
+    }
+
+    removeChunk = (x: number, z: number) => {
+        const chunk = this.chunks[x]?.[z];
+        if (chunk) {
+            delete this.chunks[x][z];
+            if (Object.keys(this.chunks[x]).length === 0) {
+                delete this.chunks[x];
+            }
+            this.remove(chunk);
+        }
     }
 
     clone() {

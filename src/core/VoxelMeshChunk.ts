@@ -4,6 +4,7 @@ import { marchCube } from "./marching-cubes/marching-cubes";
 import { smoothGeometry as createSmoothGeometry } from "./smooth-geometry";
 import { createVoxelMaterial } from "./voxel-shader";
 import MeshObject from "./MeshObject";
+import { state } from "../state";
 
 class VoxelMeshChunk extends THREE.Mesh {
     static CHUNK_BORDER_SIZE = 3;
@@ -17,19 +18,29 @@ class VoxelMeshChunk extends THREE.Mesh {
     borderNeedsUpdate: boolean[] = [];
     needsUpdate = false;
     data: any = { };
+    dataTexture: THREE.DataTexture;
+    dataTextureBuffer: Uint8Array;
     wireframeGeometry?: THREE.EdgesGeometry;
     wireframeMesh: THREE.LineSegments;
     
     constructor(voxelMesh: VoxelMesh, x: number, z: number) {
         super(new THREE.BoxGeometry(0, 0), createVoxelMaterial(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE));
-        this.position.set(x * VoxelMeshChunk.CHUNK_SIZE - VoxelMeshChunk.CHUNK_BORDER_SIZE, -VoxelMeshChunk.CHUNK_HEIGHT / 2, z * VoxelMeshChunk.CHUNK_SIZE - VoxelMeshChunk.CHUNK_BORDER_SIZE);
+        const shouldWireframeBeVisible = !voxelMesh.marchCubes && state.selectedObject?.id === voxelMesh.id && state.currentMode === 'sculpt';
+        (this.material as any).polygonOffset = shouldWireframeBeVisible;
+        const S = VoxelMeshChunk.CHUNK_SIZE;
+        const B = VoxelMeshChunk.CHUNK_BORDER_SIZE;
+        const SB = VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER;
+        const H = VoxelMeshChunk.CHUNK_HEIGHT;
+        this.position.set(x * S - B + 0.5, -H / 2 + 0.5, z * S - B + 0.5);
         this.voxelMesh = voxelMesh;
         this.userData.voxelMesh = voxelMesh;
         this.userData.meshObject = voxelMesh;
         this.x = x;
         this.z = z;
+        this.dataTextureBuffer = new Uint8Array(SB * SB * H);
+        this.dataTexture = new THREE.DataTexture(this.dataTextureBuffer, SB * SB, H, THREE.RedFormat, THREE.UnsignedByteType);
         this.wireframeMesh = new THREE.LineSegments(undefined, new THREE.LineBasicMaterial({ 
-            color: 0, 
+            color: 0
         }));
         (this.wireframeMesh as any).disableMouseEvents = true;
         this.wireframeMesh.visible = false;
@@ -123,12 +134,18 @@ class VoxelMeshChunk extends THREE.Mesh {
         }
     }
 
+    updateMaterial = () => {
+        (this.material as THREE.ShaderMaterial).dispose();
+        this.material = createVoxelMaterial(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, (this.material as any).polygonOffset);
+    }
+
     update = (selfOnly: boolean, borderUpdateSet: Set<VoxelMeshChunk>, marchCubes: boolean, smoothNormals: boolean, smoothGeometry: boolean) => {
         if (!selfOnly) {
             this.updateBorders();
         }
-
         this.geometry.dispose();
+        const SB = VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER;
+        const H = VoxelMeshChunk.CHUNK_HEIGHT;
         const positions: THREE.Vector3[] = [];
         const indices: number[] = [];
         let uniquePositions;
@@ -137,9 +154,16 @@ class VoxelMeshChunk extends THREE.Mesh {
         } else {
             uniquePositions = new Map<string, Map<string, number>>();
         }
-        for (let x = 0; x < VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER; x++) {
-            for (let y = 0; y < VoxelMeshChunk.CHUNK_HEIGHT; y++) {
-                for (let z = 0; z < VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER; z++) {
+        let voxelCount = 0;
+        for (let x = 0; x < SB; x++) {
+            for (let y = 0; y < H; y++) {
+                for (let z = 0; z < SB; z++) {
+                    if ((this.data[x]?.[y]?.[z] || 0) !== 0) {
+                        voxelCount++;
+                    }
+                    const index = (y * SB * SB + (z * SB + x));
+                    this.dataTextureBuffer[index] = (this.data[x]?.[y]?.[z] || 0);
+                    
                     let inner = true;
                     if (!marchCubes) {
                         for (let x1 = -1; x1 <= 1; x1++) {
@@ -172,6 +196,7 @@ class VoxelMeshChunk extends THREE.Mesh {
                 }
             }
         }
+        this.dataTexture.needsUpdate = true;
 
         if (smoothGeometry && marchCubes) {
             createSmoothGeometry(positions, indices);
@@ -179,9 +204,9 @@ class VoxelMeshChunk extends THREE.Mesh {
 
         const positionsArray = new Float32Array(positions.length * 3);
         for (let i = 0; i < positions.length; i++) {
-            positionsArray[i * 3] = positions[i].x + 0.5;
-            positionsArray[i * 3 + 1] = positions[i].y + 0.5;
-            positionsArray[i * 3 + 2] = positions[i].z + 0.5;
+            positionsArray[i * 3] = positions[i].x;
+            positionsArray[i * 3 + 1] = positions[i].y;
+            positionsArray[i * 3 + 2] = positions[i].z;
         }
         this.geometry = new THREE.BufferGeometry();
         this.geometry.setAttribute("position", new THREE.BufferAttribute(positionsArray, 3));
@@ -199,6 +224,19 @@ class VoxelMeshChunk extends THREE.Mesh {
                 this.borderNeedsUpdate[i] = false;
             }
         }
+
+        if (voxelCount === 0) {
+            this.geometry.dispose();
+            (this.material as any).dispose();
+            this.voxelMesh.removeChunk(this.x, this.z);
+        }
+    }
+
+    onBeforeRender(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, geometry: THREE.BufferGeometry, material: THREE.Material, group: THREE.Group): void {
+        super.onBeforeRender(renderer, scene, camera, geometry, material, group);
+        (this.material as THREE.ShaderMaterial).uniforms.dataTexture = {
+            value: this.dataTexture
+        };
     }
 
     setVoxel = (x: number, y: number, z: number, voxel: number) => {

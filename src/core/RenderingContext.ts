@@ -55,7 +55,8 @@ class RenderingContext {
         this.canvasContainer = canvasContainer;
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
-            canvas
+            canvas,
+            context: canvas.getContext("webgl2") as WebGL2RenderingContext
         });
         this.effectComposter = new EffectComposer(this.renderer);
         this.scene = new THREE.Scene();
