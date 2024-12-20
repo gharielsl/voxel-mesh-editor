@@ -29,7 +29,8 @@ export type SharedState = {
     fullscreen: boolean,
     pushAction: (action: { in: () => boolean, out?: () => void }) => void,
     materials: VoxelMaterial[],
-    selectedMaterial?: VoxelMaterial
+    selectedMaterial?: VoxelMaterial,
+    getCurrentMaterialIndex: () => number
 }
 
 export const state = reactive<SharedState>({
@@ -55,5 +56,6 @@ export const state = reactive<SharedState>({
     cursorShape: 'initial',
     fullscreen: document.fullscreenElement !== null,
     pushAction: () => { },
-    materials: [{ color: 0xffffff }]
+    materials: [{ color: '#ffffff' }],
+    getCurrentMaterialIndex: (): number => (state.materials.indexOf(state.selectedMaterial as VoxelMaterial) || 0) + 1
 });

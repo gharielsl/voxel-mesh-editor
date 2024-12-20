@@ -21,8 +21,9 @@ It allows to import and voxelify 3D models, sculpt with voxels, and to smooth ou
     - [x] Transform
     - [ ] Voxelify mesh
 - Materials
-    - [ ] Selection
-    - [ ] Voxel mesh shader
+    - [x] Selection
+    - [x] Voxel mesh shader
+    - [ ] Delete / Replace / Move
 - Import/Export
     - [ ] Save/Open
     - [x] Import

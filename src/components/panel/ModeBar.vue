@@ -4,6 +4,7 @@
     import Brush from '../input/Brush.vue';
     import 'vue-multiselect/dist/vue-multiselect.css';
     import { state } from '../../state';
+import VoxelMesh from '../../core/VoxelMesh';
 
     export default defineComponent({
         components: {
@@ -67,7 +68,7 @@
                     </div>
                 </div>
             </div>
-            <div class="mode-bar-item">
+            <div v-if="(state.selectedObject as VoxelMesh)?.isVoxelMesh" class="mode-bar-item">
                 <div class="mode-bar-item-select">
                     <div @click="state.setCurrentMode('sculpt')" class="mode-button" :style="state.currentMode === 'sculpt' ? 'background-color: var(--color-secondary);' : ''">
                         <i class="bi bi-hammer"></i>

@@ -28,9 +28,9 @@ class TransformationContext {
 
     update = (camera: THREE.Camera) => {
         this.camera = camera;
-        if (state.currentMode !== 'object') {
-            this.selectedObjects = [];
-        }
+        // if (state.currentMode !== 'object') {
+        //     this.selectedObjects = [];
+        // }
         let scale = camera.position.distanceTo(this.scene.position);
         if (scale < 35) {
             scale = 35;

@@ -2,6 +2,9 @@
 import { defineComponent } from 'vue';
 
 export default defineComponent({
+    props: {
+        value: String
+    },
     methods: {
         upload() {
             const input = document.createElement("input");
@@ -14,8 +17,7 @@ export default defineComponent({
                 }
                 const reader = new FileReader();
                 reader.onload = () => {
-                    this.src = reader.result as string;
-                    this.$emit('selectImage', this.src);
+                    this.$emit('selectImage', reader.result as string);
                 }
                 reader.onerror = () => {
 
@@ -24,27 +26,28 @@ export default defineComponent({
                 reader.readAsDataURL(file);
             });
             input.click();
+        },
+        reset(ev: Event) {
+            ev.stopPropagation();
+            this.$emit('selectImage', "");
         }
     },
     emits: {
         selectImage: (dataUri: string) => { }
-    },
-    data() {
-        return {
-            src: undefined as string | undefined
-        }
     }
 });
 </script>
 
 <template>
     <div @click="upload" class="input">
-        <img v-if="src" :src="src" alt="">
+        <img v-if="value" :src="value" alt="">
+        <div v-if="value" @click="reset" title="reset" class="H"><i class="bi bi-arrow-clockwise"></i></div>
     </div>
 </template>
 
 <style scoped>
 .input {
+    position: relative;
     width: 256px;
     height: 256px;
     background-color: black;
@@ -59,5 +62,23 @@ export default defineComponent({
 img {
     width: 100%;
     height: 100%;
+}
+
+.H {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    color: white;
+    font-weight: bolder;
+}
+
+.H:hover {
+    background-color: rgba(255, 255, 255, 0.25);
 }
 </style>

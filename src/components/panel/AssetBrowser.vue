@@ -27,6 +27,10 @@ import { VoxelMaterial } from '../../types/default';
                     state.cursorShape = 'initial';
                 }
                 this.isResizing = false;
+            },
+            addNew() {
+                state.materials.push({ color: '#ffffff' });
+                window.dispatchEvent(new CustomEvent("materialedit"));
             }
         },
         mounted() {
@@ -66,7 +70,7 @@ import { VoxelMaterial } from '../../types/default';
             </div>
             <div class="visual-browser-container">
                 <div class="browser-tools">
-                    <div @click="state.materials.push({ color: '#ffffff' })" class="browser-tools-add">Add +</div>
+                    <div @click="addNew" class="browser-tools-add">Add +</div>
                     <div class="browser-tools-title">Material Browser</div>
                     <div class="browser-tools-search">
                         <input placeholder="Filter" type="text">

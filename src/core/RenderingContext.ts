@@ -1,6 +1,6 @@
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
 import * as THREE from 'three';
-import { EffectComposer, FXAAShader, OrbitControls, OutlinePass, RenderPass, ShaderPass, SAOPass, RectAreaLightUniformsLib } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, FXAAShader, OutlinePass, RenderPass, ShaderPass, SAOPass, OrbitControls } from 'three/examples/jsm/Addons.js';
 import { state } from '../state';
 import TransformationContext from './TransformationContext';
 import MeshObject from './MeshObject';
@@ -8,7 +8,7 @@ import MouseEvent3d from './MouseEvent3d';
 import VoxelMesh from './VoxelMesh';
 import { ViewportGizmo } from 'three-viewport-gizmo';
 
-const NEAR = 0.01;
+const NEAR = 0.1;
 const FAR = 1000;
 
 class RenderingContext {
@@ -22,6 +22,7 @@ class RenderingContext {
     clock: THREE.Clock;
     grid10?: THREE.GridHelper;
     grid40?: THREE.GridHelper;
+    grid?: THREE.Group;
     lineX?: THREE.Line;
     lineZ?: THREE.Line;
     ghostLight = new THREE.PointLight(0xffffff, 10, 10000, 0.25);
@@ -41,7 +42,7 @@ class RenderingContext {
     lastMouseMove?: MouseEvent;
     isDraggingObject = false;
     pressed = new Set();
-    flySpeed = 1;
+    flySpeed = 0.25;
     gizmo: ViewportGizmo;
     isLooking = false;
     actions: { in: () => boolean, out?: () => void }[] = [];
@@ -54,7 +55,8 @@ class RenderingContext {
         this.canvasContainer = canvasContainer;
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
-            canvas
+            canvas,
+            context: canvas.getContext("webgl2") as WebGL2RenderingContext
         });
         this.effectComposter = new EffectComposer(this.renderer);
         this.scene = new THREE.Scene();
@@ -65,7 +67,7 @@ class RenderingContext {
         this.renderPass = new RenderPass(this.scene, this.camera);
         this.effectComposter.addPass(this.renderPass);
         this.camera.position.set(100, 100, 100);
-        this.controls = new OrbitControls(this.camera, canvas);
+        this.controls = new OrbitControls(this.camera, canvas as any);
         this.gizmo = new ViewportGizmo(this.camera, this.renderer, {
             placement: 'bottom-right',
             container: this.canvasContainer,
@@ -129,24 +131,27 @@ class RenderingContext {
         forward = forward.multiplyScalar(this.flySpeed);
         right = right.multiplyScalar(this.flySpeed);
         let isFlying = false;
-        if (this.pressed.has('w') && this.isLooking) {
+        if (this.pressed.has('KeyW') && this.isLooking) {
             this.camera.position.add(forward);
             isFlying = true;
-        } else if (this.pressed.has('s') && this.isLooking) {
+        } else if (this.pressed.has('KeyS') && this.isLooking) {
             this.camera.position.sub(forward);
             isFlying = true;
         }
-        if (this.pressed.has('d') && this.isLooking) {
+        if (this.pressed.has('KeyD') && this.isLooking) {
             this.camera.position.add(right);
             isFlying = true;
-        } else if (this.pressed.has('a') && this.isLooking) {
+        } else if (this.pressed.has('KeyA') && this.isLooking) {
             this.camera.position.sub(right);
             isFlying = true;
         }
         if (isFlying) {
             this.controls.target = this.camera.position.clone().add(unscaledForward.multiplyScalar(100));
         }
-        if (this.lastMouseMove) {
+        if (!this.isLooking) {
+            this.controls.update();
+        }
+        if (this.lastMouseMove && !isFlying) {
             let hover = this.intersectObject(this.lastMouseMove.offsetX, this.lastMouseMove.offsetY);
             this.clickableObjects.forEach((mesh) => {
                 if (!hover) {
@@ -169,20 +174,22 @@ class RenderingContext {
             }
         }
         
-        if (!this.isLooking) {
-            this.controls.update();
-        }
         TransformationContext.INSTANCE.update(this.camera);
         // this.camera.rotation.reorder('YXZ');
         TransformationContext.INSTANCE.scene.visible = false;
-        this.renderer.clearDepth();
+        // this.renderer.clearDepth();
+
+
+        this.renderer.autoClear = false;
         this.effectComposter.render();
         this.renderer.clearDepth();
-        this.renderer.autoClear = false;
+
         TransformationContext.INSTANCE.scene.visible = TransformationContext.INSTANCE.scene.userData.visible;
         this.renderer.render(this.topLevel, this.camera);
         TransformationContext.INSTANCE.scene.visible = false;
+
         this.renderer.autoClear = true;
+        
         if (!this.isLooking) {
             this.gizmo.update();
             this.gizmo.render();
@@ -191,6 +198,9 @@ class RenderingContext {
     }
 
     unselectAll() {
+        if (state.currentMode !== 'object') {
+            return;
+        }
         TransformationContext.INSTANCE.setVisible(false);
         TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
             mesh.unselect();
@@ -202,6 +212,9 @@ class RenderingContext {
     }
 
     selectObjects = (objects: MeshObject[]) => {
+        if (state.currentMode !== 'object') {
+            return;
+        }
         objects.forEach((object) => {
             if (!object.selected) {
                 object.select();
@@ -218,6 +231,9 @@ class RenderingContext {
     clipboard: MeshObject[] = [];
 
     copy = () => {
+        if (state.currentMode !== 'object') {
+            return;
+        }
         this.clipboard = [];
         TransformationContext.INSTANCE.selectedObjects.forEach((o) => {
             if (!this.clipboard.includes(o)) {
@@ -227,6 +243,9 @@ class RenderingContext {
     }
 
     paste = () => {
+        if (state.currentMode !== 'object') {
+            return;
+        }
         this.unselectAll();
         this.clipboard.forEach((o) => {
             const copy = o.clone();
@@ -311,6 +330,7 @@ class RenderingContext {
 
     handleKeyDown = (ev: KeyboardEvent) => {
         this.pressed.add(ev.key);
+        this.pressed.add(ev.code);
         if (ev.key === 'Tab') {
             ev.preventDefault();
         }
@@ -318,10 +338,14 @@ class RenderingContext {
 
     handleKeyUp = (ev: KeyboardEvent) => {
         this.pressed.delete(ev.key);
+        this.pressed.delete(ev.code);
         if (ev.ctrlKey) {
             ev.preventDefault();
         }
         if (ev.code === 'Delete') {
+            if (state.currentMode !== 'object') {
+                return;
+            }
             const toRemove: MeshObject[] = [];
             TransformationContext.INSTANCE.selectedObjects.forEach((mesh) => {
                 toRemove.push(mesh);
@@ -392,8 +416,6 @@ class RenderingContext {
         mouse.x = (x / this.canvas.clientWidth) * 2 - 1;
         mouse.y = -(y / this.canvas.clientHeight) * 2 + 1;
         rc.setFromCamera(mouse, this.camera);
-        rc.far = 1000;
-        rc.near = 0.0000001;
         const intersects = rc.intersectObjects(this.clickableObjects, true).reverse();
         let closestIntersect = intersects[0];
         for (const intersect of intersects) {
@@ -433,7 +455,12 @@ class RenderingContext {
         ev3d.intersect = closestIntersect;
         this.lastMeshIntersect = ev3d;
         this.lastMeshIntersect.isFirstMovement = true;
-        const object = (closestIntersect.object as MeshObject);
+        let object = (closestIntersect.object as MeshObject);
+        if (!object.isMeshObject && object.userData.meshObject) {
+            object = object.userData.meshObject;
+        } else if (!object.isMeshObject) {
+            return;
+        }
         object.invokeMouseDownEvent(ev3d);
         if (object.draggable) {
             // this.controls.enabled = false;
@@ -443,13 +470,25 @@ class RenderingContext {
 
     handleMouseUp = (ev: MouseEvent) => {
         if (this.isLooking) {
-            // document.exitPointerLock();
+            document.exitPointerLock();
+            const prevControls = this.controls;
+            this.controls.dispose();
+            this.controls = new OrbitControls(this.camera, this.canvas as any);
+            this.controls.target = prevControls.target;
+            this.gizmo.detachControls();
+            this.gizmo.attachControls(this.controls);
         }
         this.isLooking = false;
         if (!this.isDragging[ev.button]) {
-            const mesh = this.lastMeshIntersect?.intersect.object as MeshObject;
+            let mesh = this.lastMeshIntersect?.intersect.object as MeshObject | undefined;
+            if (!mesh?.isMeshObject && mesh?.userData?.meshObject) {
+                mesh = mesh.userData.meshObject;
+            } else if (!mesh?.isMeshObject) {
+                mesh = undefined;
+            }
+            
             if (mesh && !(mesh as any).disableMouseEvents) {
-                mesh?.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
+                mesh.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
                 if (!mesh.internal && state.currentMode === 'object') {
                     if (!ev.shiftKey) {
                         this.unselectAll();
@@ -469,7 +508,7 @@ class RenderingContext {
                         this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                     }
                 }
-            } else {
+            } else if (state.currentMode === 'object') {
                 this.unselectAll();
             }
         }
@@ -484,12 +523,12 @@ class RenderingContext {
         this.lastMouseMove = ev;
         if (this.controls.enabled && this.isMouseDown[2]) {
             if (!this.isLooking) {
-                // this.canvasContainer.requestPointerLock();
+                this.canvasContainer.requestPointerLock();
             }
             this.isLooking = true;
             this.camera.rotation.reorder('YXZ');
-            this.camera.rotation.y -= ev.movementX * 0.01;
-            this.camera.rotation.x -= ev.movementY * 0.01;
+            this.camera.rotation.y -= ev.movementX * 0.0065;
+            this.camera.rotation.x -= ev.movementY * 0.0065;
             this.camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.camera.rotation.x));
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
@@ -596,6 +635,7 @@ class RenderingContext {
 
     createGrid = () => {
         const grid = new THREE.Group();
+        this.grid = grid;
         this.scene.add(grid);
         this.scene.fog = new THREE.Fog(new THREE.Color(0.13, 0.13, 0.13), 0.01, 1000);
         this.grid10 = new THREE.GridHelper(FAR * 10, FAR - 1, new THREE.Color(0x333333), new THREE.Color(0x333333));
@@ -636,10 +676,27 @@ class RenderingContext {
             state.gridActive = active;
         }
         state.setCurrentMode = (mode) => {
-            state.currentMode = mode;
-            if (mode !== 'object') {
-                this.unselectAll();
+            if (mode === 'sculpt' && state.selectedObject instanceof VoxelMesh && this.outlinePass) {
+                state.selectedObject.setWireframeVisible(!state.selectedObject.marchCubes);
+                (this.outlinePass as any).previousSelectedObjects = [...this.outlinePass.selectedObjects];
+                this.outlinePass.selectedObjects = [];
+                state.currentMode = mode;
+                // const index = this.outlinePass.selectedObjects.indexOf(state.selectedObject);
+                // if (index > -1) {
+                //     this.outlinePass.selectedObjects.splice(index, 1);
+                // }
+            } else if (mode === 'object') {
+                state.currentMode = mode;
+                if (state.selectedObject instanceof VoxelMesh) {
+                    state.selectedObject.setWireframeVisible(false);
+                }
+                if (this.outlinePass && (this.outlinePass as any).previousSelectedObjects) {
+                    this.outlinePass.selectedObjects = (this.outlinePass as any).previousSelectedObjects;
+                }
             }
+            // if (mode !== 'object') {
+            //     this.unselectAll();
+            // }
         }
         this.ghostLight.position.set(1100, 1000, 900);
         this.nGhostLight.position.set(-900, -1000, -1100);
