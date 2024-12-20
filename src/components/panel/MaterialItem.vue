@@ -24,6 +24,8 @@ export default defineComponent({
             const light = new THREE.DirectionalLight(0xffffff, 1);
             light.position.set(2, 2, -2);
             this.sphere.add(light);
+            this.sphere.material.dispose();
+            this.sphere.material = new THREE.MeshStandardMaterial();
             this.sphere.material.color = new THREE.Color(material?.color || 0xffffff);
 
             await new Promise<void>((resolve) => {

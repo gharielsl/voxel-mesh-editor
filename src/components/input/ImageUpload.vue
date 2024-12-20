@@ -26,6 +26,10 @@ export default defineComponent({
                 reader.readAsDataURL(file);
             });
             input.click();
+        },
+        reset(ev: Event) {
+            ev.stopPropagation();
+            this.$emit('selectImage', "");
         }
     },
     emits: {
@@ -37,11 +41,13 @@ export default defineComponent({
 <template>
     <div @click="upload" class="input">
         <img v-if="value" :src="value" alt="">
+        <div v-if="value" @click="reset" title="reset" class="H"><i class="bi bi-arrow-clockwise"></i></div>
     </div>
 </template>
 
 <style scoped>
 .input {
+    position: relative;
     width: 256px;
     height: 256px;
     background-color: black;
@@ -56,5 +62,23 @@ export default defineComponent({
 img {
     width: 100%;
     height: 100%;
+}
+
+.H {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    color: white;
+    font-weight: bolder;
+}
+
+.H:hover {
+    background-color: rgba(255, 255, 255, 0.25);
 }
 </style>
