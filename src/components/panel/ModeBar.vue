@@ -14,7 +14,7 @@ import VoxelMesh from '../../core/VoxelMesh';
         methods: {
             resize() {
                 this.space = window.innerWidth < 1200 ? 4 : 8;
-                this.rightVisible = window.innerWidth >= 1045;
+                this.rightVisible = window.innerWidth >= 900;
             },
             fullscreenChange() {
                 state.fullscreen = document.fullscreenElement !== null
@@ -51,12 +51,9 @@ import VoxelMesh from '../../core/VoxelMesh';
         <div class="mode-bar-left">
             <div class="mode-bar-item">
                 <div class="mode-bar-item-select">
-                    <select>
-                        <option value="" disabled selected>Render Mode</option>
-                        <option value="Material Preview">Material Preview</option>
+                    <select style="width: 144px;cursor: pointer;">
+                        <option value="Lit" selected>Lit</option>
                         <option value="Unlit">Unlit</option>
-                        <option value="Wireframe">Wireframe</option>
-                        <option value="Lit">Lit</option>
                     </select>
                 </div>
             </div>

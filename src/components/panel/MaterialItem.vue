@@ -19,9 +19,10 @@ export default defineComponent({
             });
             renderer.setClearColor(new THREE.Color('#292929'));
             renderer.setSize(94, 94);
+            this.sphere.children.forEach((c) => this.sphere.remove(c));
             this.camera.position.set(0, 0, -2);
             this.camera.lookAt(new THREE.Vector3());
-            const light = new THREE.DirectionalLight(0xffffff, 1);
+            const light = new THREE.DirectionalLight(0xffffff, 0.6);
             light.position.set(2, 2, -2);
             this.sphere.add(light);
             this.sphere.material.dispose();

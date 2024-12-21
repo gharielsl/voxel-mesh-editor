@@ -30,7 +30,19 @@ export default defineComponent({
                 state.selectedMaterial.normal = value;
                 this.materialUpdate();
             }
+        },
+        mouseUp() {
+            if (this.isPickingColor) {
+                this.materialUpdate();
+                this.isPickingColor = false;
+            }
         }
+    },
+    mounted() {
+        window.addEventListener("mouseup", this.mouseUp);
+    },
+    unmounted() {
+        window.removeEventListener("mouseup", this.mouseUp);
     },
     data() {
         return {
@@ -38,7 +50,8 @@ export default defineComponent({
             textureOpen: false,
             normalOpen: false,
             nextTick,
-            state
+            state,
+            isPickingColor: false
         }
     },
     setup() {
@@ -60,7 +73,7 @@ export default defineComponent({
                 <i :class="colorOpen ? 'bi bi-caret-down-fill' : 'bi bi-caret-right-fill'"></i>
                 <h5 style="margin-left: 8px;">Color</h5>
             </div>
-            <div @mouseup="materialUpdate" @keyup="materialUpdate" class="material-property">
+            <div @mousedown="isPickingColor = true" @keyup="materialUpdate" class="material-property">
                 <Vue3ColorPicker @update:modelValue="colorChange" :modelValue="state.selectedMaterial.color || '#ffffff'" mode="solid" :showPickerMode="false" :showColorList="false" :showEyeDrop="false" type="RGBA" theme="dark" :showAlpha="false" style="width: 256px"/>
             </div>
         </div>

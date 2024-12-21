@@ -22,6 +22,9 @@ import { VoxelMaterial } from '../../types/default';
                     }
                 }
             },
+            resized() {
+                this.filterVisible = window.innerWidth >= 1040;
+            },
             mouseup() {
                 if (this.isResizing) {
                     state.cursorShape = 'initial';
@@ -42,16 +45,28 @@ import { VoxelMaterial } from '../../types/default';
             if (bottomSection && editor) {
                 editor.style.height = (+bottomSection.style.height.replace('px', '') + 48) + 'px';
             }
+            this.observer = new ResizeObserver(this.resized);
+            this.observer.observe(bottomSection);
+            // window.addEventListener("resize", this.resized);
+            this.resized();
         },
         unmounted() {
             document.removeEventListener('mouseup', this.mouseup);
             document.removeEventListener('mousemove', this.resize);
+            // window.removeEventListener('resize', this.resized);
+            this.observer?.disconnect();
         },
         data() {
             return {
                 isResizing: false,
-                state
+                state,
+                filterVisible: true
             };
+        },
+        setup() {
+            return {
+                observer: undefined as ResizeObserver | undefined
+            }
         }
     });
 </script>
@@ -72,12 +87,13 @@ import { VoxelMaterial } from '../../types/default';
                 <div class="browser-tools">
                     <div @click="addNew" class="browser-tools-add">Add +</div>
                     <div class="browser-tools-title">Material Browser</div>
-                    <div class="browser-tools-search">
+                    <div v-if="filterVisible" class="browser-tools-search">
                         <input placeholder="Filter" type="text">
                         <div class="browser-tools-search-icon">
                             <i class="bi bi-search"></i>
                         </div>
                     </div>
+                    <div v-else></div>
                 </div>
                 <div ref="bottomSection" class="visual-browser" style="height: 256px;">
                     <div class="visual-browser-items">

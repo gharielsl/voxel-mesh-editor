@@ -82,6 +82,9 @@ import MeshObject from '../../core/MeshObject';
                 });
                 input.click();
                 this.mouseInFile = false;
+            },
+            gitHub() {
+                open('https://github.com/gharielsl/voxel-mesh-editor');
             }
         },
         data() {
@@ -98,68 +101,86 @@ import MeshObject from '../../core/MeshObject';
 <template>
     <div class="top-section">
         <div class="menu-bar">
-            <div @mouseenter="mouseIn('mouseInFile')" @mouseleave="mouseOut('mouseInFile')" class="menu-item">
-                <div :class="'menu-item-button ' + (mouseInFile ? 'menu-item-button-open' : '')">
-                    File
+            <div class="menu-left">
+                <i title="GitHub" @click="gitHub" class="bi bi-github gh"></i>
+                <div @mouseenter="mouseIn('mouseInFile')" @mouseleave="mouseOut('mouseInFile')" class="menu-item">
+                    <div :class="'menu-item-button ' + (mouseInFile ? 'menu-item-button-open' : '')">
+                        File
+                    </div>
+                    <div v-if="mouseInFile" class="menu-list">
+                        <div class="menu-bar-item-btn">
+                            <div>Open</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + O)</div>
+                        </div>
+                        <div class="menu-bar-item-btn">
+                            <div>Save</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + S)</div>
+                        </div>
+                        <div @click="importFile" class="menu-bar-item-btn">
+                            <div>Import GLB/GLTF</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                        </div>
+                        <div class="menu-bar-item-btn">
+                            <div>Export</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                        </div>
+                    </div>
                 </div>
-                <div v-if="mouseInFile" class="menu-list">
-                    <div class="menu-bar-item-btn">
-                        <div>Open</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + O)</div>
+                <div @mouseenter="mouseIn('mouseInEdit')" @mouseleave="mouseOut('mouseInEdit')" class="menu-item">
+                    <div :class="'menu-item-button ' + (mouseInEdit ? 'menu-item-button-open' : '')">
+                        Edit
                     </div>
-                    <div class="menu-bar-item-btn">
-                        <div>Save</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + S)</div>
+                    <div v-if="mouseInEdit" class="menu-list">
+                        <div @click="state.renderingContext()?.copy();mouseInEdit = false" class="menu-bar-item-btn">
+                            <div>Copy</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + C)</div>
+                        </div>
+                        <div @click="state.renderingContext()?.paste();mouseInEdit = false" class="menu-bar-item-btn">
+                            <div>Paste</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + V)</div>
+                        </div>
+                        <div @click="state.renderingContext()?.undo();mouseInEdit = false" class="menu-bar-item-btn">
+                            <div>Undo</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + Z)</div>
+                        </div>
                     </div>
-                    <div @click="importFile" class="menu-bar-item-btn">
-                        <div>Import GLB/GLTF</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                </div>
+                <div @mouseenter="mouseIn('mouseInAdd')" @mouseleave="mouseOut('mouseInAdd')" class="menu-item">
+                    <div :class="'menu-item-button ' + (mouseInAdd ? 'menu-item-button-open' : '')">
+                        Add
                     </div>
-                    <div class="menu-bar-item-btn">
-                        <div>Export</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                    <div v-if="mouseInAdd" class="menu-list">
+                        <div @click="addVoxelMesh" class="menu-bar-item-btn">
+                            <div>Voxel Mesh</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)">(5x5x5)</div>
+                        </div>
+                        <div @click="addVoxel" class="menu-bar-item-btn">
+                            <div>Voxel</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)">(1x1x1)</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div @mouseenter="mouseIn('mouseInEdit')" @mouseleave="mouseOut('mouseInEdit')" class="menu-item">
-                <div :class="'menu-item-button ' + (mouseInEdit ? 'menu-item-button-open' : '')">
-                    Edit
-                </div>
-                <div v-if="mouseInEdit" class="menu-list">
-                    <div @click="state.renderingContext()?.copy();mouseInEdit = false" class="menu-bar-item-btn">
-                        <div>Copy</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + C)</div>
-                    </div>
-                    <div @click="state.renderingContext()?.paste();mouseInEdit = false" class="menu-bar-item-btn">
-                        <div>Paste</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + V)</div>
-                    </div>
-                    <div @click="state.renderingContext()?.undo();mouseInEdit = false" class="menu-bar-item-btn">
-                        <div>Undo</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + Z)</div>
-                    </div>
-                </div>
-            </div>
-            <div @mouseenter="mouseIn('mouseInAdd')" @mouseleave="mouseOut('mouseInAdd')" class="menu-item">
-                <div :class="'menu-item-button ' + (mouseInAdd ? 'menu-item-button-open' : '')">
-                    Add
-                </div>
-                <div v-if="mouseInAdd" class="menu-list">
-                    <div @click="addVoxelMesh" class="menu-bar-item-btn">
-                        <div>Voxel Mesh</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)">(5x5x5)</div>
-                    </div>
-                    <div @click="addVoxel" class="menu-bar-item-btn">
-                        <div>Voxel</div>
-                        <div style="font-size: small; color: var(--color-text-disabled)">(1x1x1)</div>
-                    </div>
-                </div>
+            <div class="menu-right">
+                
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
+    .gh {
+        margin-top: 5px;
+        margin-left: 11px;
+        margin-right: 4px;
+        transform: scale(1.3);
+    }
+
+    .gh:hover {
+        cursor: pointer;
+        color: var(--color-secondary);
+    }
+
     .top-section {
         position: relative;
         top: 0;
@@ -175,6 +196,17 @@ import MeshObject from '../../core/MeshObject';
         background-color: var(--color-foreground-1);
         border-bottom: 1px var(--color-border) solid;
         display: flex;
+        justify-content: space-between;
+    }
+
+    .menu-left {
+        height: 100%;
+        flex: 1;
+        display: flex;
+    }
+
+    .menu-right {
+        height: 100%;
     }
 
     .menu-item {
