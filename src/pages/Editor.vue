@@ -7,6 +7,8 @@
     import ToolBar from '../components/panel/ToolBar.vue';
     import TransformBar from '../components/panel/TransformBar.vue';
     import CanvasEditor from '../components/CanvasEditor.vue';
+    import Export from '../components/input/Export.vue';
+import { state } from '../state';
 
     export default defineComponent({
         components: {
@@ -17,6 +19,7 @@
             ToolBar,
             TransformBar,
             CanvasEditor,
+            Export
         }
     });
     
@@ -25,6 +28,7 @@
 <template>
     <div class="page">
         <MenuBar />
+        <Export />
         <div class="page-row">
             <div class="page-content">
                 <ModeBar />

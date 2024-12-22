@@ -1,6 +1,6 @@
 <script lang="ts">
     import * as THREE from 'three';
-    import { defineComponent } from 'vue';
+    import { defineComponent, nextTick } from 'vue';
     import { state } from '../../state';
     import VoxelMesh from '../../core/VoxelMesh';
 import TransformationContext from '../../core/TransformationContext';
@@ -10,10 +10,25 @@ import MeshObject from '../../core/MeshObject';
     export default defineComponent({
         methods: {
             mouseIn(target: string) {
+                (this as any)[target.replace('mouse', 'hover')] = true;
+                if (!this.isAnyOpen) return;
+                clearTimeout(this.timeout);
+                this.timeout = 0;
                 (this as any)[target] = true;
             },
             mouseOut(target: string) {
+                (this as any)[target.replace('mouse', 'hover')] = false;
+                this.timeout = setTimeout(() => {
+                    this.isAnyOpen = false;
+                }, 1000);
                 (this as any)[target] = false;
+            },
+            close(target: string) {
+                clearTimeout(this.timeout);
+                this.timeout = 0;
+                (this as any)[target.replace('mouse', 'hover')] = false;
+                (this as any)[target] = false;
+                this.isAnyOpen = false;
             },
             addVoxelMesh() {
                 const vo = new VoxelMesh();
@@ -29,7 +44,7 @@ import MeshObject from '../../core/MeshObject';
                         renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                     }
                 }
-                this.mouseInAdd = false;
+                this.close("mouseInAdd");
             },
             addVoxel() {
                 const vo = new VoxelMesh();
@@ -45,7 +60,7 @@ import MeshObject from '../../core/MeshObject';
                         renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
                     }
                 }
-                this.mouseInAdd = false;
+                this.close("mouseInAdd");
             },
             importFile() {
                 const input = document.createElement('input');
@@ -62,7 +77,8 @@ import MeshObject from '../../core/MeshObject';
                         loader.load(reader.result as string, (scene) => {
                             const meshObject = new MeshObject(new THREE.BoxGeometry(0, 0, 0), new THREE.MeshBasicMaterial());
                             scene.scene.traverse((child) => {
-                                child.userData.meshObject = meshObject;
+                                (child as any).meshObject = meshObject;
+                                // child.userData.meshObject = meshObject;
                             });
                             meshObject.name = 'Imported';
                             meshObject.add(scene.scene);
@@ -81,7 +97,7 @@ import MeshObject from '../../core/MeshObject';
                     reader.readAsDataURL(file);
                 });
                 input.click();
-                this.mouseInFile = false;
+                this.close("mouseInFile");
             },
             gitHub() {
                 open('https://github.com/gharielsl/voxel-mesh-editor');
@@ -92,7 +108,16 @@ import MeshObject from '../../core/MeshObject';
                 mouseInFile: false,
                 mouseInEdit: false,
                 mouseInAdd: false,
+                hoverInFile: false,
+                hoverInEdit: false,
+                hoverInAdd: false,
+                isAnyOpen: false,
                 state
+            }
+        },
+        setup() {
+            return {
+                timeout: 0
             }
         }
     });
@@ -103,8 +128,8 @@ import MeshObject from '../../core/MeshObject';
         <div class="menu-bar">
             <div class="menu-left">
                 <i title="GitHub" @click="gitHub" class="bi bi-github gh"></i>
-                <div @mouseenter="mouseIn('mouseInFile')" @mouseleave="mouseOut('mouseInFile')" class="menu-item">
-                    <div :class="'menu-item-button ' + (mouseInFile ? 'menu-item-button-open' : '')">
+                <div @click="isAnyOpen=true;mouseIn('mouseInFile')" @mouseenter="mouseIn('mouseInFile')" @mouseleave="mouseOut('mouseInFile')" class="menu-item">
+                    <div :class="'menu-item-button ' + ((mouseInFile || hoverInFile) ? 'menu-item-button-open' : '')">
                         File
                     </div>
                     <div v-if="mouseInFile" class="menu-list">
@@ -116,45 +141,45 @@ import MeshObject from '../../core/MeshObject';
                             <div>Save</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + S)</div>
                         </div>
-                        <div @click="importFile" class="menu-bar-item-btn">
+                        <div @click.stop="importFile" class="menu-bar-item-btn">
                             <div>Import GLB/GLTF</div>
                             <div style="font-size: small; color: var(--color-text-disabled)"></div>
                         </div>
-                        <div class="menu-bar-item-btn">
+                        <div @click.stop="state.setExportOpen(true); close('mouseInFile')" class="menu-bar-item-btn">
                             <div>Export</div>
                             <div style="font-size: small; color: var(--color-text-disabled)"></div>
                         </div>
                     </div>
                 </div>
-                <div @mouseenter="mouseIn('mouseInEdit')" @mouseleave="mouseOut('mouseInEdit')" class="menu-item">
-                    <div :class="'menu-item-button ' + (mouseInEdit ? 'menu-item-button-open' : '')">
+                <div @click="isAnyOpen=true;mouseIn('mouseInEdit')" @mouseenter="mouseIn('mouseInEdit')" @mouseleave="mouseOut('mouseInEdit')" class="menu-item">
+                    <div :class="'menu-item-button ' + ((mouseInEdit || hoverInEdit) ? 'menu-item-button-open' : '')">
                         Edit
                     </div>
                     <div v-if="mouseInEdit" class="menu-list">
-                        <div @click="state.renderingContext()?.copy();mouseInEdit = false" class="menu-bar-item-btn">
+                        <div @click.stop="state.renderingContext()?.copy();close('mouseInEdit')" class="menu-bar-item-btn">
                             <div>Copy</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + C)</div>
                         </div>
-                        <div @click="state.renderingContext()?.paste();mouseInEdit = false" class="menu-bar-item-btn">
+                        <div @click.stop="state.renderingContext()?.paste();close('mouseInEdit')" class="menu-bar-item-btn">
                             <div>Paste</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + V)</div>
                         </div>
-                        <div @click="state.renderingContext()?.undo();mouseInEdit = false" class="menu-bar-item-btn">
+                        <div @click.stop="state.renderingContext()?.undo();close('mouseInEdit')" class="menu-bar-item-btn">
                             <div>Undo</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + Z)</div>
                         </div>
                     </div>
                 </div>
-                <div @mouseenter="mouseIn('mouseInAdd')" @mouseleave="mouseOut('mouseInAdd')" class="menu-item">
-                    <div :class="'menu-item-button ' + (mouseInAdd ? 'menu-item-button-open' : '')">
+                <div @click="isAnyOpen=true;mouseIn('mouseInAdd')" @mouseenter="mouseIn('mouseInAdd')" @mouseleave="mouseOut('mouseInAdd')" class="menu-item">
+                    <div :class="'menu-item-button ' + ((mouseInAdd || hoverInAdd) ? 'menu-item-button-open' : '')">
                         Add
                     </div>
                     <div v-if="mouseInAdd" class="menu-list">
-                        <div @click="addVoxelMesh" class="menu-bar-item-btn">
+                        <div @click.stop="addVoxelMesh" class="menu-bar-item-btn">
                             <div>Voxel Mesh</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(5x5x5)</div>
                         </div>
-                        <div @click="addVoxel" class="menu-bar-item-btn">
+                        <div @click.stop="addVoxel" class="menu-bar-item-btn">
                             <div>Voxel</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(1x1x1)</div>
                         </div>

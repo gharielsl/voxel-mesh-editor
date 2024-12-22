@@ -40,10 +40,12 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
     });
 
     const material = new CustomMaterial({
-        baseMaterial: THREE.MeshStandardMaterial,
+        baseMaterial: THREE.MeshPhysicalMaterial,
         polygonOffset,
         polygonOffsetFactor: 1,
         polygonOffsetUnits: 1,
+        metalness: 0,
+        roughness: 1,
         vertexShader: `
     varying vec3 fragPosition;
     varying vec3 fragNormal;
@@ -84,6 +86,7 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
     }
 
     void main() {
+        vec3 csm_NormalMap;
         vec3 position = marchCubes == 0 ? fragPosition + 0.5 : fragPosition;
         ivec3 voxelPosition = ivec3(position);
         vec3 localPosition = position - vec3(voxelPosition);
@@ -138,9 +141,9 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
         
         csm_DiffuseColor = vec4(accumulatedColor, 1);
         if (marchCubes == 0 && cubeHasNormal) {
-            csm_Bump = accumulatedNormal;
+            csm_Bump  = accumulatedNormal;
         } else if (totalNormalWeight > 0.0) {
-            csm_Bump = accumulatedNormal;
+            csm_Bump  = accumulatedNormal;
         }
     }
         `
@@ -180,7 +183,7 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
         }
     });
 
-    return material as any as THREE.MeshStandardMaterial;
+    return material as any as THREE.MeshPhysicalMaterial;
 }
 
 export {

@@ -342,6 +342,9 @@ class RenderingContext {
         if (ev.ctrlKey) {
             ev.preventDefault();
         }
+        if (document.activeElement !== document.body) {
+            return;
+        }
         if (ev.code === 'Delete') {
             if (state.currentMode !== 'object') {
                 return;
@@ -430,8 +433,8 @@ class RenderingContext {
                 break;
             }
             closestIntersect = intersect;
-            if (closestIntersect.object.userData.meshObject) {
-                closestIntersect.object = closestIntersect.object.userData.meshObject;
+            if ((closestIntersect.object as any).meshObject) {
+                closestIntersect.object = (closestIntersect.object as any).meshObject;
             }
             // const distance = intersect.point.distanceTo(this.camera.position);
             // intersect.distance = distance;
@@ -456,8 +459,8 @@ class RenderingContext {
         this.lastMeshIntersect = ev3d;
         this.lastMeshIntersect.isFirstMovement = true;
         let object = (closestIntersect.object as MeshObject);
-        if (!object.isMeshObject && object.userData.meshObject) {
-            object = object.userData.meshObject;
+        if (!object.isMeshObject && (object as any).meshObject) {
+            object = (object as any).meshObject;
         } else if (!object.isMeshObject) {
             return;
         }
@@ -481,8 +484,8 @@ class RenderingContext {
         this.isLooking = false;
         if (!this.isDragging[ev.button]) {
             let mesh = this.lastMeshIntersect?.intersect.object as MeshObject | undefined;
-            if (!mesh?.isMeshObject && mesh?.userData?.meshObject) {
-                mesh = mesh.userData.meshObject;
+            if (!mesh?.isMeshObject && (mesh as any)?.meshObject) {
+                mesh = (mesh as any)?.meshObject;
             } else if (!mesh?.isMeshObject) {
                 mesh = undefined;
             }

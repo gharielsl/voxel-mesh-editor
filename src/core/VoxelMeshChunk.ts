@@ -33,8 +33,7 @@ class VoxelMeshChunk extends THREE.Mesh {
         const H = VoxelMeshChunk.CHUNK_HEIGHT;
         this.position.set(x * S - B + 0.5, -H / 2 + 0.5, z * S - B + 0.5);
         this.voxelMesh = voxelMesh;
-        this.userData.voxelMesh = voxelMesh;
-        this.userData.meshObject = voxelMesh;
+        (this as any).meshObject = voxelMesh;
         this.x = x;
         this.z = z;
         this.dataTextureBuffer = new Uint8Array(SB * SB * H);
@@ -284,6 +283,55 @@ class VoxelMeshChunk extends THREE.Mesh {
             }
         }
         return copy;
+    }
+
+    createExportGeometry = () => {
+        const index = this.geometry?.index?.array.reverse() as unknown as number[];
+        const vertex = this.geometry?.getAttribute("position").array;
+        if (!index || !vertex) {
+            return null;
+        }
+        const B = VoxelMeshChunk.CHUNK_BORDER_SIZE;
+        const S = VoxelMeshChunk.CHUNK_SIZE;
+        const geometry = new THREE.BufferGeometry();
+        const exportVertex: THREE.Vector3[] = [];
+        const exportIndex: number[] = [];
+        const vertexMap = new Map<string, number>();
+        const hash = (v: THREE.Vector3) => `${v.x},${v.y},${v.z}`;
+        let v0 = new THREE.Vector3();
+        let v1 = new THREE.Vector3();
+        let v2 = new THREE.Vector3();
+        for(let i = 0; i < index.length; i += 3){
+            let i0 = index[i] * 3;
+            let i1 = index[i + 1] * 3;
+            let i2 = index[i + 2] * 3;
+            v0.set(vertex[i0], vertex[i0 + 1], vertex[i0 + 2]);
+            v1.set(vertex[i1], vertex[i1 + 1], vertex[i1 + 2]);
+            v2.set(vertex[i2], vertex[i2 + 1], vertex[i2 + 2]);
+            const center = v0.clone().add(v1).add(v2).divideScalar(3);
+            if (center.x > B && center.x < S + B && 
+                center.z > B && center.z < S + B) {
+                [v0, v1, v2].forEach((v) => {
+                    if ((this.voxelMesh.smoothNormals || this.voxelMesh.smoothGeometry) && vertexMap.has(hash(v))) {
+                        exportIndex.push(vertexMap.get(hash(v)) as number);
+                    } else {
+                        exportVertex.push(v.clone());
+                        exportIndex.push(exportVertex.length - 1);
+                        vertexMap.set(hash(v), exportVertex.length - 1);
+                    }
+                });
+            }
+        }
+        const positionsArray = new Float32Array(exportVertex.length * 3);
+        for (let i = 0; i < exportVertex.length; i++) {
+            positionsArray[i * 3] = exportVertex[i].x;
+            positionsArray[i * 3 + 1] = exportVertex[i].y;
+            positionsArray[i * 3 + 2] = exportVertex[i].z;
+        }
+        geometry.setAttribute("position", new THREE.BufferAttribute(positionsArray, 3));
+        geometry.setIndex(exportIndex.reverse());
+        geometry.computeVertexNormals();
+        return geometry;
     }
 }
 

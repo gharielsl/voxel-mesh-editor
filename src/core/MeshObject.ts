@@ -128,9 +128,12 @@ class MeshObject extends THREE.Mesh {
                 child.userData = { };
                 const clonedChild = child.clone(false);
                 clonedChild.userData = { ...userData };
-                if (clonedChild.userData.meshObject) {
-                    clonedChild.userData.meshObject = copy;
+                if ((clonedChild as any).meshObject) {
+                    (clonedChild as any).meshObject = copy;
                 }
+                // if (clonedChild.userData.meshObject) {
+                //     clonedChild.userData.meshObject = copy;
+                // }
                 child.userData = userData;
                 copy.add(clonedChild);
             }
