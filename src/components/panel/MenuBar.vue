@@ -112,27 +112,16 @@ import readVox from 'voxbe59s14nd003i';
                     const reader = new FileReader();
                     reader.onload = async () => {
                         const vox = (readVox as any)(new Uint8Array(reader.result as ArrayBuffer));
+                        console.log(vox);
                         const voxelMesh = new VoxelMesh();
-                        // for await (const color of (vox as any).rgba.values) {
-                        //     const material = {
-                        //         color: "#" + new THREE.Color(color.r, color.g, color.b).getHexString()
-                        //     }
-                        //     state.materials.push(material);
-                        //     await new Promise<void>((resolve) => {
-                        //         const materialRendered = () => {
-                        //             window.removeEventListener("materialRendered", materialRendered);
-                        //             resolve();
-                        //         };
-                        //         window.addEventListener("materialRendered", materialRendered);
-                        //     });
-                        // }
                         const iToMat = new Map<number, number>();
+                        const colors = (vox as any).rgba.values;
                         for await (const xyzi of (vox as any).xyzi.values) {
                             if (!iToMat.has(xyzi.i)) {
                                 iToMat.set(xyzi.i, state.materials.length);
-                                const color = (vox as any).rgba.values[xyzi.i];
+                                const color = colors[xyzi.i - 1];
                                 const material = {
-                                    color: "#" + new THREE.Color(color.r, color.g, color.b).getHexString()
+                                    color: "#" + new THREE.Color(color.r / 255, color.g / 255, color.b / 255).getHexString()
                                 }
                                 state.materials.push(material);
                                 window.dispatchEvent(new CustomEvent("materialedit"));
@@ -144,7 +133,7 @@ import readVox from 'voxbe59s14nd003i';
                                     window.addEventListener("materialRendered", materialRendered);
                                 });
                             }
-                            voxelMesh.setVoxel(xyzi.x, xyzi.y, xyzi.z, iToMat.get(xyzi.i) as number);
+                            voxelMesh.setVoxel(xyzi.x, xyzi.y, xyzi.z, iToMat.get(xyzi.i) as number + 1);
                         }
                         state.renderingContext().scene.add(voxelMesh);
                         state.renderingContext().clickableObjects.push(voxelMesh);
