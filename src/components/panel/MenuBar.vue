@@ -101,6 +101,26 @@ import MeshObject from '../../core/MeshObject';
             },
             gitHub() {
                 open('https://github.com/gharielsl/voxel-mesh-editor');
+            },
+            save() {
+                state.renderingContext().save();
+            },
+            openFile() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.zip';
+                input.multiple = false;
+                input.click();
+                input.addEventListener('change', (ev: Event) => {
+                    if (!input.files?.[0]) {
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        state.renderingContext().load(reader.result as ArrayBuffer);
+                    }
+                    reader.readAsArrayBuffer(input.files[0]);
+                });
             }
         },
         data() {
@@ -133,11 +153,11 @@ import MeshObject from '../../core/MeshObject';
                         File
                     </div>
                     <div v-if="mouseInFile" class="menu-list">
-                        <div class="menu-bar-item-btn">
+                        <div @click="openFile" class="menu-bar-item-btn">
                             <div>Open</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + O)</div>
                         </div>
-                        <div class="menu-bar-item-btn">
+                        <div @click="save" class="menu-bar-item-btn">
                             <div>Save</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + S)</div>
                         </div>

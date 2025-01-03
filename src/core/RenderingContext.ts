@@ -7,6 +7,7 @@ import MeshObject from './MeshObject';
 import MouseEvent3d from './MouseEvent3d';
 import VoxelMesh from './VoxelMesh';
 import { ViewportGizmo } from 'three-viewport-gizmo';
+import JSZip from 'jszip';
 
 const NEAR = 0.1;
 const FAR = 1000;
@@ -278,6 +279,9 @@ class RenderingContext {
     deleteObjects = (objects: MeshObject[]) => {
         const toRemove: MeshObject[] = [];
         objects.forEach((mesh) => {
+            if (!mesh.isMeshObject || mesh.internal) {
+                return;
+            }
             toRemove.push(mesh);
             mesh.destoy();
         });
@@ -296,6 +300,55 @@ class RenderingContext {
         if (this.outlinePass) {
             this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
         }
+    }
+
+    save = () => {
+        const zip = new JSZip();
+        const materials = state.materials.map((material) => {
+            const copy = {...material};
+            delete copy.normalGl;
+            delete copy.textureGl;
+            return copy;
+        });
+        zip.file("materials", JSON.stringify(materials));
+        const meshObjects: any = [];
+        this.clickableObjects.forEach((object) => {
+            if (object instanceof VoxelMesh) {
+                meshObjects.push(object.write());
+            }
+        });
+        zip.file("voxels", JSON.stringify(meshObjects));
+        zip.generateAsync({ type: "blob" }).then((result) => {
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(result);
+            a.download = "scene.zip";
+            a.click();
+        });
+    }
+
+    load = (data: ArrayBuffer) => {
+        const zip = new JSZip();
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = [];
+        }
+        TransformationContext.INSTANCE.selectedObjects = [];
+        this.deleteObjects(this.clickableObjects as MeshObject[]);
+        zip.loadAsync(data).then(async () => {
+            zip.file("materials")?.async("string").then((materials) => {
+                state.materials = JSON.parse(materials);
+                state.selectedMaterial = state.materials[0];
+                window.dispatchEvent(new CustomEvent("materialedit"));
+            });
+            zip.file("voxels")?.async("string").then((voxels) => {
+                const objects = JSON.parse(voxels);
+                objects.forEach((chunks: any) => {
+                    const mesh = new VoxelMesh();
+                    mesh.load(chunks);
+                    this.clickableObjects.push(mesh);
+                    this.scene.add(mesh);
+                });
+            });
+        });
     }
 
     shouldControlsBeOn = () => {

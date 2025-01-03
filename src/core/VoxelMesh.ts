@@ -318,6 +318,32 @@ class VoxelMesh extends MeshObject {
         this.previousSmoothGeometry = this.previousSmoothGeometry;
     }
 
+    write = () => {
+        const chunks: any = { };
+        for (const [x, _] of Object.entries(this.chunks)) {
+            for (const [z, chunk] of Object.entries(this.chunks[x])) {
+                if (chunk instanceof VoxelMeshChunk) {
+                    if (!chunks[x]) chunks[x] = { };
+                    chunks[x][z] = chunk.data;
+                }
+            }
+        }
+        return chunks;
+    }
+
+    load = (chunks: any) => {
+        for (const [x, _] of Object.entries(chunks)) {
+            for (const [z, chunk] of Object.entries(chunks[x])) {
+                if (!this.chunks[x]) this.chunks[x] = { };
+                this.chunks[x][z] = new VoxelMeshChunk(this, +x, +z);
+                this.chunks[x][z].data = chunk;
+                this.chunks[x][z].needsUpdate = true;
+                this.add(this.chunks[x][z]);
+            }
+        }
+        this.update();
+    }
+
     public destoy(): void {
         super.destoy();
         document.removeEventListener('mouseup', this.mouseUp);
