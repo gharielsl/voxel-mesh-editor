@@ -55,6 +55,7 @@ export default defineComponent({
             this.src = (this.$refs.canvas as HTMLCanvasElement).toDataURL();
             renderer.dispose();
             renderer.forceContextLoss();
+            window.dispatchEvent(new CustomEvent("materialRendered"));
         },
         materialEdit() {
             if (state.selectedMaterial !== this.$props.material) {

@@ -6,6 +6,7 @@
 import TransformationContext from '../../core/TransformationContext';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import MeshObject from '../../core/MeshObject';
+import readVox from 'vox-reader';
 
     export default defineComponent({
         methods: {
@@ -99,14 +100,75 @@ import MeshObject from '../../core/MeshObject';
                 input.click();
                 this.close("mouseInFile");
             },
+            importVox() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.vox';
+                input.multiple = false;
+                input.addEventListener('change', (ev: Event) => {
+                    if (!input.files?.[0]) {
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                        const vox = readVox(new Uint8Array(reader.result as ArrayBuffer));
+                        const voxelMesh = new VoxelMesh();
+                        // for await (const color of (vox as any).rgba.values) {
+                        //     const material = {
+                        //         color: "#" + new THREE.Color(color.r, color.g, color.b).getHexString()
+                        //     }
+                        //     state.materials.push(material);
+                        //     await new Promise<void>((resolve) => {
+                        //         const materialRendered = () => {
+                        //             window.removeEventListener("materialRendered", materialRendered);
+                        //             resolve();
+                        //         };
+                        //         window.addEventListener("materialRendered", materialRendered);
+                        //     });
+                        // }
+                        const iToMat = new Map<number, number>();
+                        for await (const xyzi of (vox as any).xyzi.values) {
+                            if (!iToMat.has(xyzi.i)) {
+                                iToMat.set(xyzi.i, state.materials.length);
+                                const color = (vox as any).rgba.values[xyzi.i];
+                                const material = {
+                                    color: "#" + new THREE.Color(color.r, color.g, color.b).getHexString()
+                                }
+                                state.materials.push(material);
+                                window.dispatchEvent(new CustomEvent("materialedit"));
+                                await new Promise<void>((resolve) => {
+                                    const materialRendered = () => {
+                                        window.removeEventListener("materialRendered", materialRendered);
+                                        resolve();
+                                    };
+                                    window.addEventListener("materialRendered", materialRendered);
+                                });
+                            }
+                            voxelMesh.setVoxel(xyzi.x, xyzi.y, xyzi.z, iToMat.get(xyzi.i) as number);
+                        }
+                        state.renderingContext().scene.add(voxelMesh);
+                        state.renderingContext().clickableObjects.push(voxelMesh);
+                        voxelMesh.update();
+                    }
+                    reader.onerror = () => {
+                        
+                    }
+                    const file = input.files[0];
+                    reader.readAsArrayBuffer(file);
+                });
+                input.click();
+                this.close("mouseInFile");
+            },
             gitHub() {
                 open('https://github.com/gharielsl/voxel-mesh-editor');
             },
             save() {
                 state.renderingContext().save();
+                this.close("mouseInFile");
             },
             openFile() {
                 state.renderingContext().open();
+                this.close("mouseInFile");
             }
         },
         data() {
@@ -149,6 +211,10 @@ import MeshObject from '../../core/MeshObject';
                         </div>
                         <div @click.stop="importFile" class="menu-bar-item-btn">
                             <div>Import GLB/GLTF</div>
+                            <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                        </div>
+                        <div @click.stop="importVox" class="menu-bar-item-btn">
+                            <div>Import VOX</div>
                             <div style="font-size: small; color: var(--color-text-disabled)"></div>
                         </div>
                         <div @click.stop="state.setExportOpen(true); close('mouseInFile')" class="menu-bar-item-btn">
