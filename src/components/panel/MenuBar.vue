@@ -6,7 +6,7 @@
 import TransformationContext from '../../core/TransformationContext';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import MeshObject from '../../core/MeshObject';
-import readVox from 'vox-reader';
+const readVox = require('vox-reader');
 
     export default defineComponent({
         methods: {
