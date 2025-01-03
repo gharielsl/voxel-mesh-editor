@@ -6,7 +6,7 @@
 import TransformationContext from '../../core/TransformationContext';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import MeshObject from '../../core/MeshObject';
-const readVox = require('vox-reader');
+import readVox from 'voxbe59s14nd003i';
 
     export default defineComponent({
         methods: {
@@ -111,7 +111,7 @@ const readVox = require('vox-reader');
                     }
                     const reader = new FileReader();
                     reader.onload = async () => {
-                        const vox = readVox(new Uint8Array(reader.result as ArrayBuffer));
+                        const vox = (readVox as any)(new Uint8Array(reader.result as ArrayBuffer));
                         const voxelMesh = new VoxelMesh();
                         // for await (const color of (vox as any).rgba.values) {
                         //     const material = {
