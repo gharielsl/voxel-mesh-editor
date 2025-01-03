@@ -8,6 +8,7 @@ import MouseEvent3d from './MouseEvent3d';
 import VoxelMesh from './VoxelMesh';
 import { ViewportGizmo } from 'three-viewport-gizmo';
 import JSZip from 'jszip';
+import { nextTick } from 'vue';
 
 const NEAR = 0.1;
 const FAR = 1000;
@@ -324,7 +325,7 @@ class RenderingContext {
                     types: [
                         {
                           description: "A voxel scene",
-                          accept: {"multipart/zip": [".zip"]}
+                          accept: {"multipart/zip": [".voxscene"]}
                         }
                     ]
                 });
@@ -334,7 +335,7 @@ class RenderingContext {
             } else {
                 const a = document.createElement("a");
                 a.href = URL.createObjectURL(result);
-                a.download = "scene.zip";
+                a.download = "scene.voxscene";
                 a.click();
             }
         });
@@ -351,7 +352,9 @@ class RenderingContext {
             zip.file("materials")?.async("string").then((materials) => {
                 state.materials = JSON.parse(materials);
                 state.selectedMaterial = state.materials[0];
-                window.dispatchEvent(new CustomEvent("materialedit"));
+                nextTick(() => {
+                    window.dispatchEvent(new CustomEvent("materialedit"));
+                });
             });
             zip.file("voxels")?.async("string").then((voxels) => {
                 const objects = JSON.parse(voxels);
@@ -366,6 +369,24 @@ class RenderingContext {
                     this.scene.add(mesh);
                 });
             });
+        });
+    }
+
+    open = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.voxscene';
+        input.multiple = false;
+        input.click();
+        input.addEventListener('change', (ev: Event) => {
+            if (!input.files?.[0]) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                state.renderingContext().load(reader.result as ArrayBuffer);
+            }
+            reader.readAsArrayBuffer(input.files[0]);
         });
     }
 
@@ -403,6 +424,12 @@ class RenderingContext {
         this.pressed.add(ev.key);
         this.pressed.add(ev.code);
         if (ev.key === 'Tab') {
+            ev.preventDefault();
+        }
+        if (ev.code === "KeyS" && ev.ctrlKey) {
+            ev.preventDefault();
+        }
+        if (ev.code === "KeyO" && ev.ctrlKey) {
             ev.preventDefault();
         }
     }
@@ -465,6 +492,12 @@ class RenderingContext {
         }
         if (ev.code === 'KeyZ' && ev.ctrlKey) {
             this.undo();
+        }
+        if (ev.code === 'KeyS' && ev.ctrlKey) {
+            this.save();
+        }
+        if (ev.code === 'KeyO' && ev.ctrlKey) {
+            this.open();
         }
         // this.controls.enabled = this.shouldControlsBeOn();
         if (ev.key === 'Tab') {

@@ -106,21 +106,7 @@ import MeshObject from '../../core/MeshObject';
                 state.renderingContext().save();
             },
             openFile() {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.zip';
-                input.multiple = false;
-                input.click();
-                input.addEventListener('change', (ev: Event) => {
-                    if (!input.files?.[0]) {
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        state.renderingContext().load(reader.result as ArrayBuffer);
-                    }
-                    reader.readAsArrayBuffer(input.files[0]);
-                });
+                state.renderingContext().open();
             }
         },
         data() {
