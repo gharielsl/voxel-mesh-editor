@@ -328,7 +328,7 @@ class VoxelMesh extends MeshObject {
                 }
             }
         }
-        return chunks;
+        return { chunks, transform: { rotate: this.rotation, translate: this.position, scale: this.scale } };
     }
 
     load = (chunks: any) => {
