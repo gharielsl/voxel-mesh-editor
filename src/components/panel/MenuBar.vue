@@ -101,6 +101,12 @@ import MeshObject from '../../core/MeshObject';
             },
             gitHub() {
                 open('https://github.com/gharielsl/voxel-mesh-editor');
+            },
+            save() {
+                state.renderingContext().save();
+            },
+            openFile() {
+                state.renderingContext().open();
             }
         },
         data() {
@@ -133,11 +139,11 @@ import MeshObject from '../../core/MeshObject';
                         File
                     </div>
                     <div v-if="mouseInFile" class="menu-list">
-                        <div class="menu-bar-item-btn">
+                        <div @click="openFile" class="menu-bar-item-btn">
                             <div>Open</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + O)</div>
                         </div>
-                        <div class="menu-bar-item-btn">
+                        <div @click="save" class="menu-bar-item-btn">
                             <div>Save</div>
                             <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + S)</div>
                         </div>

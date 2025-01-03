@@ -7,6 +7,8 @@ import MeshObject from './MeshObject';
 import MouseEvent3d from './MouseEvent3d';
 import VoxelMesh from './VoxelMesh';
 import { ViewportGizmo } from 'three-viewport-gizmo';
+import JSZip from 'jszip';
+import { nextTick } from 'vue';
 
 const NEAR = 0.1;
 const FAR = 1000;
@@ -278,6 +280,9 @@ class RenderingContext {
     deleteObjects = (objects: MeshObject[]) => {
         const toRemove: MeshObject[] = [];
         objects.forEach((mesh) => {
+            if (!mesh.isMeshObject || mesh.internal) {
+                return;
+            }
             toRemove.push(mesh);
             mesh.destoy();
         });
@@ -296,6 +301,96 @@ class RenderingContext {
         if (this.outlinePass) {
             this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
         }
+    }
+
+    save = () => {
+        const zip = new JSZip();
+        const materials = state.materials.map((material) => {
+            const copy = {...material};
+            delete copy.normalGl;
+            delete copy.textureGl;
+            return copy;
+        });
+        zip.file("materials", JSON.stringify(materials));
+        const meshObjects: any = [];
+        this.clickableObjects.forEach((object) => {
+            if (object instanceof VoxelMesh) {
+                meshObjects.push(object.write());
+            }
+        });
+        zip.file("voxels", JSON.stringify(meshObjects));
+        zip.generateAsync({ type: "blob" }).then(async (result) => {
+            if ((window as any).showSaveFilePicker) {
+                const file = await (window as any).showSaveFilePicker({
+                    types: [
+                        {
+                          description: "A voxel scene",
+                          accept: {"multipart/zip": [".voxscene"]}
+                        }
+                    ]
+                });
+                const writableStream = await file.createWritable();
+                await writableStream.write(result);
+                await writableStream.close();
+            } else {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(result);
+                a.download = "scene.voxscene";
+                a.click();
+            }
+        });
+    }
+
+    load = (data: ArrayBuffer) => {
+        const zip = new JSZip();
+        if (this.outlinePass) {
+            this.outlinePass.selectedObjects = [];
+        }
+        TransformationContext.INSTANCE.selectedObjects = [];
+        this.deleteObjects(this.clickableObjects as MeshObject[]);
+        zip.loadAsync(data).then(async () => {
+            zip.file("materials")?.async("string").then((materials) => {
+                state.materials = JSON.parse(materials);
+                state.selectedMaterial = state.materials[0];
+                nextTick(() => {
+                    window.dispatchEvent(new CustomEvent("materialedit"));
+                });
+            });
+            zip.file("voxels")?.async("string").then((voxels) => {
+                const objects = JSON.parse(voxels);
+                objects.forEach(({ chunks, transform, marchCubes, smoothNormals, smoothGeometry, subdivide }: any) => {
+                    const mesh = new VoxelMesh();
+                    mesh.position.copy(transform.translate);
+                    mesh.rotation.copy(transform.rotate);
+                    mesh.scale.copy(transform.scale);
+                    mesh.marchCubes = marchCubes;
+                    mesh.smoothNormals = smoothNormals;
+                    mesh.smoothGeometry = smoothGeometry;
+                    mesh.subdivide = subdivide;
+                    mesh.load(chunks);
+                    this.clickableObjects.push(mesh);
+                    this.scene.add(mesh);
+                });
+            });
+        });
+    }
+
+    open = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.voxscene';
+        input.multiple = false;
+        input.click();
+        input.addEventListener('change', (ev: Event) => {
+            if (!input.files?.[0]) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                state.renderingContext().load(reader.result as ArrayBuffer);
+            }
+            reader.readAsArrayBuffer(input.files[0]);
+        });
     }
 
     shouldControlsBeOn = () => {
@@ -332,6 +427,12 @@ class RenderingContext {
         this.pressed.add(ev.key);
         this.pressed.add(ev.code);
         if (ev.key === 'Tab') {
+            ev.preventDefault();
+        }
+        if (ev.code === "KeyS" && ev.ctrlKey) {
+            ev.preventDefault();
+        }
+        if (ev.code === "KeyO" && ev.ctrlKey) {
             ev.preventDefault();
         }
     }
@@ -394,6 +495,12 @@ class RenderingContext {
         }
         if (ev.code === 'KeyZ' && ev.ctrlKey) {
             this.undo();
+        }
+        if (ev.code === 'KeyS' && ev.ctrlKey) {
+            this.save();
+        }
+        if (ev.code === 'KeyO' && ev.ctrlKey) {
+            this.open();
         }
         // this.controls.enabled = this.shouldControlsBeOn();
         if (ev.key === 'Tab') {

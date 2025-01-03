@@ -25,6 +25,15 @@ import VoxelMesh from '../../core/VoxelMesh';
                 } else {
                     document.exitFullscreen();
                 }
+            },
+            lightingChange(ev: Event) {
+                if ((ev.target as HTMLSelectElement)?.value === "Lit") {
+                    state.renderingContext().ghostLight.visible = true;
+                    state.renderingContext().nGhostLight.visible = true;
+                } else {
+                    state.renderingContext().ghostLight.visible = false;
+                    state.renderingContext().nGhostLight.visible = false;
+                }
             }
         },
         mounted() {
@@ -51,7 +60,7 @@ import VoxelMesh from '../../core/VoxelMesh';
         <div class="mode-bar-left">
             <div class="mode-bar-item">
                 <div class="mode-bar-item-select">
-                    <select style="width: 144px;cursor: pointer;">
+                    <select @change="lightingChange" style="width: 144px;cursor: pointer;">
                         <option value="Lit" selected>Lit</option>
                         <option value="Unlit">Unlit</option>
                     </select>
@@ -99,14 +108,6 @@ import VoxelMesh from '../../core/VoxelMesh';
                     </div>
                 </div>
             </div>
-            <!-- <div class="mode-bar-item">
-                <div class="mode-bar-item-select">
-                    <div class="mode-button">
-                        <i class="bi bi-globe-americas"></i>
-                        World Material
-                    </div>
-                </div>
-            </div> -->
             <div :style="`width: ${space}px;`"></div>
         </div>
     </div>
