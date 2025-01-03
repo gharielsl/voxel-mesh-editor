@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import VoxelMesh from "./VoxelMesh";
 import { marchCube } from "./marching-cubes/marching-cubes";
-import { smoothGeometry as createSmoothGeometry } from "./smooth-geometry";
+import { smoothGeometry as createSmoothGeometry, subdivide } from "./smooth-geometry";
 import { createVoxelMaterial } from "./voxel-shader";
 import MeshObject from "./MeshObject";
 import { state } from "../state";
@@ -138,7 +138,7 @@ class VoxelMeshChunk extends THREE.Mesh {
         this.material = createVoxelMaterial(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, (this.material as any).polygonOffset);
     }
 
-    update = (selfOnly: boolean, borderUpdateSet: Set<VoxelMeshChunk>, marchCubes: boolean, smoothNormals: boolean, smoothGeometry: boolean) => {
+    update = (selfOnly: boolean, borderUpdateSet: Set<VoxelMeshChunk>, marchCubes: boolean, smoothNormals: boolean, smoothGeometry: boolean, subdivideGeometry: boolean) => {
         if (!selfOnly) {
             this.updateBorders();
         }
@@ -199,6 +199,10 @@ class VoxelMeshChunk extends THREE.Mesh {
 
         if (smoothGeometry && marchCubes) {
             createSmoothGeometry(positions, indices);
+            if (subdivideGeometry) {
+                subdivide(positions, indices);
+                createSmoothGeometry(positions, indices);
+            }
         }
 
         const positionsArray = new Float32Array(positions.length * 3);

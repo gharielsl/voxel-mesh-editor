@@ -358,12 +358,15 @@ class RenderingContext {
             });
             zip.file("voxels")?.async("string").then((voxels) => {
                 const objects = JSON.parse(voxels);
-                objects.forEach(({ chunks, transform }: any) => {
+                objects.forEach(({ chunks, transform, marchCubes, smoothNormals, smoothGeometry, subdivide }: any) => {
                     const mesh = new VoxelMesh();
-                    console.log(transform);
                     mesh.position.copy(transform.translate);
                     mesh.rotation.copy(transform.rotate);
                     mesh.scale.copy(transform.scale);
+                    mesh.marchCubes = marchCubes;
+                    mesh.smoothNormals = smoothNormals;
+                    mesh.smoothGeometry = smoothGeometry;
+                    mesh.subdivide = subdivide;
                     mesh.load(chunks);
                     this.clickableObjects.push(mesh);
                     this.scene.add(mesh);

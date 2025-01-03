@@ -31,6 +31,12 @@ export default defineComponent({
                 state.selectedObject.update();
             }
         },
+        subdivideGeometry(event: any) {
+            if (state.selectedObject instanceof VoxelMesh) {
+                state.selectedObject.subdivide = event.target.checked;
+                state.selectedObject.update();
+            }
+        },
         positionChange(v: THREE.Vector3) {
             if (state.selectedObject) {
                 state.selectedObject.position.copy(v);
@@ -146,6 +152,10 @@ export default defineComponent({
             <div v-if="(state.selectedObject as VoxelMesh).marchCubes" class="object-option">
                 <h5>Smooth</h5>
                 <input @change="smoothGeometry" :checked="(state.selectedObject as VoxelMesh).smoothGeometry" type="checkbox">
+            </div>
+            <div v-if="(state.selectedObject as VoxelMesh).marchCubes && (state.selectedObject as VoxelMesh).smoothGeometry" class="object-option">
+                <h5>Subdivide</h5>
+                <input @change="subdivideGeometry" :checked="(state.selectedObject as VoxelMesh).subdivide" type="checkbox">
             </div>
         </div>
     </div>
