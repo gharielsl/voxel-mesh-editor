@@ -56,13 +56,11 @@ It allows to import and voxelize 3D models, sculpt with voxels, and to smooth ou
 - <kbd>Ctrl</kbd> + <kbd>Drag</kbd>: Spray voxels.
 - <kbd>Alt</kbd> + <kbd>Drag</kbd>: Select voxels.
 
-## Voxelifying Imported Mesh
-- On the menu bar select `File`.
-- Import GLB/GLTF.
-- Select your file.
-- On the properties panel in the bottom right click `convert to voxel mesh`.
-
 ## Smoothing Voxel Meshes
 - Select the mesh.
 - On the properties panel tick `march cubes`.
 - Tick `smooth`.
+
+### 5 different smoothing stages
+
+![](images/detail.png)
