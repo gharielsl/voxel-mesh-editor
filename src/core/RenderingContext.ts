@@ -318,11 +318,25 @@ class RenderingContext {
             }
         });
         zip.file("voxels", JSON.stringify(meshObjects));
-        zip.generateAsync({ type: "blob" }).then((result) => {
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(result);
-            a.download = "scene.zip";
-            a.click();
+        zip.generateAsync({ type: "blob" }).then(async (result) => {
+            if ((window as any).showSaveFilePicker) {
+                const file = await (window as any).showSaveFilePicker({
+                    types: [
+                        {
+                          description: "A voxel scene",
+                          accept: {"multipart/zip": [".zip"]}
+                        }
+                    ]
+                });
+                const writableStream = await file.createWritable();
+                await writableStream.write(result);
+                await writableStream.close();
+            } else {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(result);
+                a.download = "scene.zip";
+                a.click();
+            }
         });
     }
 
