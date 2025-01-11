@@ -79,7 +79,6 @@ import readVox from 'voxbe59s14nd003i';
                             const meshObject = new MeshObject(new THREE.BoxGeometry(0, 0, 0), new THREE.MeshBasicMaterial());
                             scene.scene.traverse((child) => {
                                 (child as any).meshObject = meshObject;
-                                // child.userData.meshObject = meshObject;
                             });
                             meshObject.name = 'Imported';
                             meshObject.add(scene.scene);
@@ -111,30 +110,103 @@ import readVox from 'voxbe59s14nd003i';
                     }
                     const reader = new FileReader();
                     reader.onload = async () => {
-                        const vox = (readVox as any)(new Uint8Array(reader.result as ArrayBuffer));
-                        console.log(vox);
+                        const { result, riffData } = (readVox as any)(new Uint8Array(reader.result as ArrayBuffer));
+                        console.log(result, riffData);
+                        
                         const voxelMesh = new VoxelMesh();
                         const iToMat = new Map<number, number>();
-                        const colors = (vox as any).rgba.values;
-                        for await (const xyzi of (vox as any).xyzi.values) {
-                            if (!iToMat.has(xyzi.i)) {
-                                iToMat.set(xyzi.i, state.materials.length);
-                                const color = colors[xyzi.i - 1];
-                                const material = {
-                                    color: "#" + new THREE.Color(color.r / 255, color.g / 255, color.b / 255).getHexString()
-                                }
-                                state.materials.push(material);
-                                window.dispatchEvent(new CustomEvent("materialedit"));
-                                await new Promise<void>((resolve) => {
-                                    const materialRendered = () => {
-                                        window.removeEventListener("materialRendered", materialRendered);
-                                        resolve();
-                                    };
-                                    window.addEventListener("materialRendered", materialRendered);
-                                });
-                            }
-                            voxelMesh.setVoxel(xyzi.x, xyzi.y, xyzi.z, iToMat.get(xyzi.i) as number + 1);
+                        const colors = (result as any).rgba.values;
+                        function createMatrix(_r) {
+                            const row1Index = (_r & 0x03);
+                            const row2Index = ((_r >> 2) & 0x03);
+                            const sign1 = ((_r >> 4) & 0x01);
+                            const sign2 = ((_r >> 5) & 0x01);
+                            const sign3 = ((_r >> 6) & 0x01);
+                            let matrix = [
+                                [0, 0, 0],
+                                [0, 0, 0],
+                                [0, 0, 0]
+                            ];
+                            matrix[0][row1Index] = sign1 === 0 ? 1 : -1;
+                            matrix[1][row2Index] = sign2 === 0 ? 1 : -1;
+                            matrix[2][3 - row1Index - row2Index] = sign3 === 0 ? 1 : -1;
+                            const rotationMatrix = new THREE.Matrix4();
+                            rotationMatrix.set(
+                                matrix[0][0], matrix[0][1], matrix[0][2], 0,
+                                matrix[1][0], matrix[1][1], matrix[1][2], 0,
+                                matrix[2][0], matrix[2][1], matrix[2][2], 0,
+                                0, 0, 0, 1
+                            );
+
+                            return rotationMatrix;
                         }
+                        console.log(colors);
+                        const transforms = { };
+
+                        function createTransforms(node, depth) {
+                            for (let i = 0; i < node.children.length; i++) {
+                                const child = node.children[i];
+                                const previousChild = node.children[i - 1];
+                                if (child.id === 'nSHP' && previousChild?.id == 'nTRN') {
+                                    for (let j = 0; j < child.data.numModels; j++) {
+                                        const model = child.data.models[j][0];
+                                        transforms[depth + ',' + (model * 2 + 1)] = previousChild;
+                                    }
+                                }
+                                createTransforms(child, depth + 1);
+                            }
+                        }
+                        async function createVoxels(node, depth) {
+                            let i = 0;
+                            for await (const child of node.children) {
+                                const previousChild = node.children[i - 1];
+                                if (child.id === 'XYZI') {
+                                    let xyzis = child.data.values;
+                                    if (!xyzis) {
+                                        xyzis = [ child.data ];
+                                    }
+                                    for await (const xyzi of xyzis) {
+                                        if (!iToMat.has(xyzi.i)) {
+                                            iToMat.set(xyzi.i, state.materials.length);
+                                            const color = colors[xyzi.i - 1];
+                                            const material = {
+                                                color: "#" + new THREE.Color(color.r / 255, color.g / 255, color.b / 255).getHexString()
+                                            }
+                                            state.materials.push(material);
+                                            window.dispatchEvent(new CustomEvent("materialedit"));
+                                            await new Promise<void>((resolve) => {
+                                                const materialRendered = () => {
+                                                    window.removeEventListener("materialRendered", materialRendered);
+                                                    resolve();
+                                                };
+                                                window.addEventListener("materialRendered", materialRendered);
+                                            });
+                                        }
+                                        const position = new THREE.Vector3(xyzi.x, xyzi.y, xyzi.z);
+                                        if (previousChild.id === 'SIZE') {
+                                            position.sub(new THREE.Vector3().copy(previousChild.data).divideScalar(2).floor());
+                                        }
+                                        const trn = transforms[depth + ',' + i];
+                                        if (trn) {
+                                            const t = trn.data.frames[0];
+                                            if (t._r) {
+                                                position.applyMatrix4(createMatrix(t._r)).floor();
+                                            }
+                                            if (t._t) {
+                                                const tr = t._t.split(" ").map(Number);
+                                                position.add(new THREE.Vector3(tr[0], tr[1], tr[2]));
+                                            }
+                                        }
+                                        voxelMesh.setVoxel(position.x, position.z, position.y, iToMat.get(xyzi.i) as number + 1);
+                                    }
+                                }
+                                await createVoxels(child, depth + 1);
+                                i++;
+                            }
+                        }
+                        createTransforms(riffData, 0);
+                        await createVoxels(riffData, 0);
+
                         state.renderingContext().scene.add(voxelMesh);
                         state.renderingContext().clickableObjects.push(voxelMesh);
                         voxelMesh.update();

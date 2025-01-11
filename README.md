@@ -1,6 +1,10 @@
 ## Overview
 Visit live demo - [Github Pages](https://gharielsl.github.io/voxel-mesh-editor).
 
+
+![](./images/voxels.png)
+
+
 The **Voxel Mesh Editor** is a tool for creating and editing voxel-based 3D models.
 
 It allows to import and voxelize 3D models, sculpt with voxels, and to smooth out voxel meshes.
@@ -27,6 +31,9 @@ It allows to import and voxelize 3D models, sculpt with voxels, and to smooth ou
 - Import/Export
     - [x] Save/Open
     - [x] Import
+    - [ ] Export .vox
+    - [x] Export GLB/GLTF
+    - [ ] Bake textures
 - Misc
     - [ ] Measuring
     - [ ] First person walk
