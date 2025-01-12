@@ -348,14 +348,28 @@ class RenderingContext {
         }
         TransformationContext.INSTANCE.selectedObjects = [];
         this.deleteObjects(this.clickableObjects as MeshObject[]);
+        state.materials = [];
         zip.loadAsync(data).then(async () => {
-            zip.file("materials")?.async("string").then((materials) => {
-                state.materials = JSON.parse(materials);
-                state.selectedMaterial = state.materials[0];
-                nextTick(() => {
-                    window.dispatchEvent(new CustomEvent("materialedit"));
+            await new Promise<void>((resolve) => {
+                zip.file("materials")?.async("string").then(async (materials) => {
+                    for await (const material of JSON.parse(materials)) {
+                        state.materials.push(material);
+                        nextTick(() => {
+                            window.dispatchEvent(new CustomEvent("materialedit"));
+                        });
+                        await new Promise<void>((resolve) => {
+                            const materialRendered = () => {
+                                window.removeEventListener("materialRendered", materialRendered);
+                                resolve();
+                            };
+                            window.addEventListener("materialRendered", materialRendered);
+                        });
+                    }
+                    state.selectedMaterial = state.materials[0];
+                    resolve();
                 });
             });
+            
             zip.file("voxels")?.async("string").then((voxels) => {
                 const objects = JSON.parse(voxels);
                 objects.forEach(({ chunks, transform, marchCubes, smoothNormals, smoothGeometry, subdivide }: any) => {
