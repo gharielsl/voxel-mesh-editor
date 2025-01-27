@@ -35,7 +35,7 @@
 
 <template>
     <div class="tool-bar">
-        <div @click="editClick" title="edit" class="tool-bar-item edit">
+        <!-- <div @click="editClick" title="edit" class="tool-bar-item edit">
             <i class="bi bi-boxes"></i>
         </div>
         <div @click="measureClick" title="measure" class="tool-bar-item measure">
@@ -46,7 +46,7 @@
         </div>
         <div @click="annotateClick" title="annotate" class="tool-bar-item annotate">
             <i class="bi bi-pen-fill"></i>
-        </div>
+        </div> -->
     </div>
 </template>
 
