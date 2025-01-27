@@ -5,5 +5,6 @@ export type VoxelMaterial = {
     texture?: string,
     normal?: string,
     textureGl?: Texture,
-    normalGl?: Texture
+    normalGl?: Texture,
+    name?: string
 }

@@ -63,6 +63,13 @@ export default defineComponent({
             }
             this.src = undefined;
             nextTick(this.render);
+        },
+        rename(ev: Event) {
+            const input = ev.target as HTMLInputElement;
+            if (input.value === '') {
+                input.value = this.material?.name || 'Material ' + this.index;
+            }
+            this.material.name = input.value;
         }
     },
     mounted() {
@@ -89,7 +96,8 @@ export default defineComponent({
 
 <template>
     <div @click="state.selectedMaterial = material;" :class="{'item':true,'selected':state.selectedMaterial===material}">
-        <div class="name">Material {{ index }}</div>
+        <input @change="rename" class="name" :value="material?.name || 'Material ' + index"></input>
+        <!-- <div class="name">Material {{ index }}</div> -->
         <div class="preview">
             <canvas v-if="!src" ref="canvas" width="94" height="94"></canvas>
             <img v-if="src" :src="src">
@@ -133,5 +141,15 @@ export default defineComponent({
         border-radius: 8px;
         border: 1px var(--color-foreground-2-bright) solid;
         /* border-style: inset; */
+    }
+
+    input {
+      border: none;
+      background: none;
+      outline: none;
+      color: inherit;
+      font-size: inherit;
+      font-family: inherit;
+      text-align: center;
     }
 </style>

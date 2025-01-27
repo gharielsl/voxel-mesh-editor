@@ -4,6 +4,7 @@ import { state } from '../../state';
 import MaterialItem from './MaterialItem.vue';
 import MaterialEditor from './MaterialEditor.vue';
 import { VoxelMaterial } from '../../types/default';
+import { filter } from 'jszip';
 
     export default defineComponent({
         components: {
@@ -34,11 +35,19 @@ import { VoxelMaterial } from '../../types/default';
             addNew() {
                 state.materials.push({ color: '#ffffff' });
                 window.dispatchEvent(new CustomEvent("materialedit"));
+            },
+            filter() {
+                const input = this.$refs.filter as HTMLInputElement;
+                this.materials = state.materials.filter((mat) => {
+                    const matName = mat.name || ('Material ' + state.materials.indexOf(mat));
+                    return input.value === '' || matName.toLowerCase().startsWith(input.value.toLowerCase()) || state.selectedMaterial === mat;
+                });
             }
         },
         mounted() {
             document.addEventListener('mouseup', this.mouseup);
             document.addEventListener('mousemove', this.resize);
+            window.addEventListener("materialedit", this.filter);
             state.selectedMaterial = state.materials[0];
             const bottomSection = this.$refs.bottomSection as HTMLElement;
             const editor = this.$refs.editor as HTMLElement;
@@ -53,6 +62,7 @@ import { VoxelMaterial } from '../../types/default';
         unmounted() {
             document.removeEventListener('mouseup', this.mouseup);
             document.removeEventListener('mousemove', this.resize);
+            window.removeEventListener("materialsChange", this.filter);
             // window.removeEventListener('resize', this.resized);
             this.observer?.disconnect();
         },
@@ -60,7 +70,8 @@ import { VoxelMaterial } from '../../types/default';
             return {
                 isResizing: false,
                 state,
-                filterVisible: true
+                filterVisible: true,
+                materials: state.materials
             };
         },
         setup() {
@@ -88,7 +99,7 @@ import { VoxelMaterial } from '../../types/default';
                     <div @click="addNew" class="browser-tools-add">Add +</div>
                     <div class="browser-tools-title">Material Browser</div>
                     <div v-if="filterVisible" class="browser-tools-search">
-                        <input placeholder="Filter" type="text">
+                        <input ref="filter" @keyup="filter" placeholder="Filter" type="text">
                         <div class="browser-tools-search-icon">
                             <i class="bi bi-search"></i>
                         </div>
@@ -97,7 +108,7 @@ import { VoxelMaterial } from '../../types/default';
                 </div>
                 <div ref="bottomSection" class="visual-browser" style="height: 256px;">
                     <div class="visual-browser-items">
-                        <MaterialItem v-for="(material, index) of state.materials" :index="index" :material="material" />
+                        <MaterialItem v-for="(material, index) of materials" :index="index" :material="material" />
                     </div>
                 </div>
             </div>
