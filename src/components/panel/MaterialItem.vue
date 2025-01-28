@@ -74,7 +74,11 @@ export default defineComponent({
         select(ev: MouseEvent) {
             state.justSelectedMat = true;
             if (ev.ctrlKey) {
-                state.selectedMaterials.add(this.material);
+                if (state.selectedMaterials.has(this.material)) {
+                    state.selectedMaterials.delete(this.material);
+                } else {
+                    state.selectedMaterials.add(this.material);
+                }
                 state.selectedMaterials = new Set(state.selectedMaterials);
             } else {
                 state.selectedMaterial = this.material;
