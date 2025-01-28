@@ -24,7 +24,9 @@ import { filter } from 'jszip';
                 }
             },
             resized() {
-                this.filterVisible = window.innerWidth >= 1040;
+                // this.width = window.innerWidth;
+                this.width = this.$refs.container.clientWidth;
+                // this.filterVisible = window.innerWidth >= 1040;
             },
             mouseup() {
                 if (this.isResizing) {
@@ -42,6 +44,25 @@ import { filter } from 'jszip';
                     const matName = mat.name || ('Material ' + state.materials.indexOf(mat));
                     return input.value === '' || matName.toLowerCase().startsWith(input.value.toLowerCase()) || state.selectedMaterial === mat;
                 });
+            },
+            areAllMatsSelected() {
+                if (state.selectedMaterials.has(state.selectedMaterial)) {
+                    return state.selectedMaterials.size === state.materials.length;
+                }
+                return state.selectedMaterials.size === state.materials.length - 1; 
+            },
+            deleteMats() {
+                if (this.areAllMatsSelected() || state.materials.length === 1) {
+                    return;
+                }
+                if (window.confirm('Are you sure you want to delete all selected materials?\n**This includes the current material as well.**')) {
+                    state.materials = state.materials.filter((mat) => {
+                        return !state.selectedMaterials.has(mat) && state.selectedMaterial !== mat;
+                    });
+                    state.selectedMaterial = state.materials[0];
+                    state.selectedMaterials = new Set();
+                    this.filter();
+                }
             }
         },
         mounted() {
@@ -70,7 +91,8 @@ import { filter } from 'jszip';
             return {
                 isResizing: false,
                 state,
-                filterVisible: true,
+                // filterVisible: true,
+                width: window.innerWidth,
                 materials: state.materials
             };
         },
@@ -94,19 +116,27 @@ import { filter } from 'jszip';
             <div ref="editor" class="editor">
                 <MaterialEditor />
             </div>
-            <div class="visual-browser-container">
-                <div class="browser-tools">
-                    <div @click="addNew" class="browser-tools-add">Add +</div>
-                    <div class="browser-tools-title">Material Browser</div>
-                    <div v-if="filterVisible" class="browser-tools-search">
+            <div ref="container" class="visual-browser-container">
+                <div class="browser-tools" style="position: relative;">
+                    <div v-if="width > 640" style="display: flex;">
+                        <div @click="addNew" class="browser-tools-add">Add +</div>
+                        <div @click="deleteMats" v-if="state.materials.length > 1 && !areAllMatsSelected()" class="browser-tools-add delete" style="width: auto">Delete selected</div>
+                    </div>
+                    <div v-else style="display: flex; position: absolute; flex-direction: column; right: 12px; top: 64px">
+                        <div @click="addNew" class="browser-tools-add">+</div>
+                        <div @click="deleteMats" v-if="state.materials.length > 1 && !areAllMatsSelected()" class="browser-tools-add" style="margin-top:8px;"><i class="bi bi-trash-fill"></i></div>
+                    </div>
+                    <div v-if="width <= 640"></div>
+                    <div v-if="width > 400" class="browser-tools-title">Material Browser</div>
+                    <div v-else></div>
+                    <div class="browser-tools-search">
                         <input ref="filter" @keyup="filter" placeholder="Filter" type="text">
                         <div class="browser-tools-search-icon">
                             <i class="bi bi-search"></i>
                         </div>
                     </div>
-                    <div v-else></div>
                 </div>
-                <div ref="bottomSection" class="visual-browser" style="height: 256px;">
+                <div @click="if (!state.justSelectedMat) state.selectedMaterials = new Set(); state.justSelectedMat = false" ref="bottomSection" class="visual-browser" style="height: 256px;">
                     <div class="visual-browser-items">
                         <MaterialItem v-for="(material, index) of materials" :index="index" :material="material" />
                     </div>
@@ -186,7 +216,9 @@ import { filter } from 'jszip';
     .browser-tools-add {
         margin-left: 32px;
         height: 32px;
-        width: 64px;
+        /* width: 64px; */
+        padding-left: 8px;
+        padding-right: 8px;
         background-color: var(--color-foreground-2);
         border-radius: 8px;
         display: flex;
@@ -197,6 +229,10 @@ import { filter } from 'jszip';
     .browser-tools-add:hover {
         color: var(--color-primary);
         cursor: pointer;
+    }
+
+    .browser-tools-add.delete:hover {
+        color: red !important;
     }
 
     .browser-tools-title {

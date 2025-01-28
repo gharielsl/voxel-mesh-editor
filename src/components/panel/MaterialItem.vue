@@ -70,6 +70,16 @@ export default defineComponent({
                 input.value = this.material?.name || 'Material ' + this.index;
             }
             this.material.name = input.value;
+        },
+        select(ev: MouseEvent) {
+            state.justSelectedMat = true;
+            if (ev.ctrlKey) {
+                state.selectedMaterials.add(this.material);
+                state.selectedMaterials = new Set(state.selectedMaterials);
+            } else {
+                state.selectedMaterial = this.material;
+                state.selectedMaterials = new Set();
+            }
         }
     },
     mounted() {
@@ -95,7 +105,7 @@ export default defineComponent({
 </script>
 
 <template>
-    <div @click="state.selectedMaterial = material;" :class="{'item':true,'selected':state.selectedMaterial===material}">
+    <div @click="select" :class="{'item':true,'selected-edit':state.selectedMaterials.has(material),'selected':state.selectedMaterial===material}">
         <input @change="rename" class="name" :value="material?.name || 'Material ' + index"></input>
         <!-- <div class="name">Material {{ index }}</div> -->
         <div class="preview">
@@ -121,7 +131,11 @@ export default defineComponent({
     }
 
     .item.selected {
-        border: 1px solid var(--color-secondary);
+        border: 1px solid var(--color-secondary) !important;
+    }
+
+    .item.selected-edit {
+        border: 1px solid rgba(var(--color-primary-rgb), 0.5);
     }
 
     .item:hover {

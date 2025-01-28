@@ -12,7 +12,9 @@
   -moz-osx-font-smoothing: grayscale;
 
   --color-primary: #3e86a0;
+  --color-primary-rgb: 62, 134, 160;
   --color-secondary: #b15b2e;
+  --color-secondary-rgb: 177, 91, 46;
   --color-background: rgb(18, 18, 18);
   --color-foreground: rgb(18, 18, 18);
   --color-foreground-1: rgb(31, 31, 31);
