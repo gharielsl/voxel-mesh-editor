@@ -36,6 +36,27 @@ export default defineComponent({
                 this.materialUpdate();
                 this.isPickingColor = false;
             }
+        },
+        pickMat() {
+            state.cursorShape = 'url(\'/voxel-mesh-editor/img/eyedropper.svg\'), auto';
+            state.isPickingMat = true;
+            const handlemousedown = (ev: MouseEvent) => {
+                if (ev.button !== 0) {
+                    return;
+                }
+                state.cursorShape = 'unset';
+                const rect = state.renderingContext().canvas.getBoundingClientRect();
+                const isInsideCanvas =
+                    ev.clientX >= rect.left &&
+                    ev.clientX <= rect.right &&
+                    ev.clientY >= rect.top &&
+                    ev.clientY <= rect.bottom;
+                if (!isInsideCanvas) {
+                    state.isPickingMat = false;
+                }
+                window.removeEventListener('mousedown', handlemousedown);
+            }
+            window.addEventListener('mousedown', handlemousedown);
         }
     },
     mounted() {
@@ -65,7 +86,11 @@ export default defineComponent({
 
 <template>
     <div class="material-editor">
-        <div class="material-editor-title">Selected - Material {{ state.materials.indexOf(state.selectedMaterial as VoxelMaterial) }}</div>
+        <div class="material-editor-title">
+            <div @click="pickMat" :class="{'btn': true, 'pick': state.isPickingMat}"><i class="bi bi-eyedropper"></i></div>
+            <div>Selected - Material {{ state.materials.indexOf(state.selectedMaterial as VoxelMaterial) }}</div>
+            <div></div>
+        </div>
     </div>
     <div v-if="state.selectedMaterial" class="material-properties">
         <div :class="{'object-option-group': true, 'color': true, 'collapse': !colorOpen}" style="margin-top: 8px;">
@@ -120,10 +145,10 @@ export default defineComponent({
 
     .material-editor-title {
         height: 48px;
-        width: 100%;
+        width: 90%;
         border-bottom: 1px var(--color-foreground-2) solid;
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
     }
 
@@ -158,6 +183,31 @@ export default defineComponent({
     .group-title:hover {
         cursor: pointer;
         color: var(--color-primary)
+    }
+
+    .btn {
+        height: 32px;
+        /* width: 64px; */
+        padding-left: 8px;
+        padding-right: 8px;
+        background-color: var(--color-foreground-2);
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .btn:hover {
+        color: var(--color-primary);
+        cursor: pointer;
+    }
+
+    .btn.pick {
+        background-color: var(--color-secondary);
+    }
+
+    .btn.pick:hover {
+        color: var(--color-text);
     }
 
     h5 {

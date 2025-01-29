@@ -67,7 +67,7 @@ export default defineComponent({
         rename(ev: Event) {
             const input = ev.target as HTMLInputElement;
             if (input.value === '') {
-                input.value = this.material?.name || 'Material ' + this.index;
+                input.value = this.material?.name || 'Material ' + state.materials.indexOf(this.material);
             }
             this.material.name = input.value;
         },
@@ -109,12 +109,13 @@ export default defineComponent({
 </script>
 
 <template>
-    <div @click="select" :class="{'item':true,'selected-edit':state.selectedMaterials.has(material),'selected':state.selectedMaterial===material}">
-        <input @change="rename" class="name" :value="material?.name || 'Material ' + index"></input>
+    <div v-if="material" @click="select" :class="{'item':true,'selected-edit':state.selectedMaterials.has(material),'selected':state.selectedMaterial===material}">
+        <input @change="rename" class="name" :value="material?.name || 'Material ' + state.materials.indexOf(material)"></input>
         <!-- <div class="name">Material {{ index }}</div> -->
         <div class="preview">
             <canvas v-if="!src" ref="canvas" width="94" height="94"></canvas>
             <img v-if="src" :src="src">
+            <div style="position: absolute; bottom: 0; right: 4px; font-size: x-small;"># {{ state.materials.indexOf(material) }}</div>
         </div>
     </div>
 </template>
@@ -152,6 +153,7 @@ export default defineComponent({
     }
 
     .preview {
+        position: relative;
         width: 94px;
         height: 94px;
         overflow: hidden;

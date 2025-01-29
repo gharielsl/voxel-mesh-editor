@@ -35,12 +35,18 @@ import { filter } from 'jszip';
                 this.isResizing = false;
             },
             addNew() {
-                state.materials.push({ color: '#ffffff' });
+                let i = 0;
+                for (; i <= state.materials.length; i++) {
+                    if (!state.materials[i]) break;
+                }
+                state.materials[i] = { color: '#ffffff' };
+                // state.materials.push({ color: '#ffffff' });
                 window.dispatchEvent(new CustomEvent("materialedit"));
             },
             filter() {
                 const input = this.$refs.filter as HTMLInputElement;
                 this.materials = state.materials.filter((mat) => {
+                    if (!mat) return false;
                     const matName = mat.name || ('Material ' + state.materials.indexOf(mat));
                     return input.value === '' || matName.toLowerCase().startsWith(input.value.toLowerCase()) || state.selectedMaterial === mat;
                 });
@@ -52,16 +58,32 @@ import { filter } from 'jszip';
                 return state.selectedMaterials.size === state.materials.length - 1; 
             },
             deleteMats() {
-                if (this.areAllMatsSelected() || state.materials.length === 1) {
+                let matsLength = 0;
+                state.materials.forEach((mat) => {
+                    if (mat) matsLength++;
+                });
+                if (this.areAllMatsSelected() || matsLength === 1) {
                     return;
                 }
                 if (window.confirm('Are you sure you want to delete all selected materials?\n**This includes the current material as well.**')) {
-                    state.materials = state.materials.filter((mat) => {
-                        return !state.selectedMaterials.has(mat) && state.selectedMaterial !== mat;
+                    state.materials = state.materials.map((mat) => {
+                        if (!state.selectedMaterials.has(mat) && state.selectedMaterial !== mat) {
+                            return mat;
+                        }
+                        return null;
                     });
-                    state.selectedMaterial = state.materials[0];
+                    let i = 0;
+                    for (; i < state.materials.length; i++) {
+                        if (state.materials[i]) break;
+                    }
+                    state.selectedMaterial = state.materials[i];
                     state.selectedMaterials = new Set();
-                    this.filter();
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent("materialedit"));
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent("materialedit"));
+                        }, 100);
+                    }, 10);
                 }
             }
         },
@@ -69,7 +91,11 @@ import { filter } from 'jszip';
             document.addEventListener('mouseup', this.mouseup);
             document.addEventListener('mousemove', this.resize);
             window.addEventListener("materialedit", this.filter);
-            state.selectedMaterial = state.materials[0];
+            let i = 0;
+            for (; i < state.materials.length; i++) {
+                if (state.materials[i]) break;
+            }
+            state.selectedMaterial = state.materials[i];
             const bottomSection = this.$refs.bottomSection as HTMLElement;
             const editor = this.$refs.editor as HTMLElement;
             if (bottomSection && editor) {
@@ -120,11 +146,11 @@ import { filter } from 'jszip';
                 <div class="browser-tools" style="position: relative;">
                     <div v-if="width > 640" style="display: flex;">
                         <div @click="addNew" class="browser-tools-add">Add +</div>
-                        <div @click="deleteMats" v-if="state.materials.length > 1 && !areAllMatsSelected()" class="browser-tools-add delete" style="width: auto">Delete selected</div>
+                        <div @click="deleteMats" v-if="!areAllMatsSelected()" class="browser-tools-add delete" style="width: auto">Delete selected</div>
                     </div>
                     <div v-else style="display: flex; position: absolute; flex-direction: column; right: 12px; top: 64px">
                         <div @click="addNew" class="browser-tools-add">+</div>
-                        <div @click="deleteMats" v-if="state.materials.length > 1 && !areAllMatsSelected()" class="browser-tools-add" style="margin-top:8px;"><i class="bi bi-trash-fill"></i></div>
+                        <div @click="deleteMats" v-if="!areAllMatsSelected()" class="browser-tools-add" style="margin-top:8px;"><i class="bi bi-trash-fill"></i></div>
                     </div>
                     <div v-if="width <= 640"></div>
                     <div v-if="width > 400" class="browser-tools-title">Material Browser</div>

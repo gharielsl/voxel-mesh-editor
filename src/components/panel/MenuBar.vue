@@ -165,12 +165,16 @@ import readVox from 'voxbe59s14nd003i';
                                     }
                                     for await (const xyzi of xyzis) {
                                         if (!iToMat.has(xyzi.i)) {
-                                            iToMat.set(xyzi.i, state.materials.length);
+                                            let newMatIndex = 0;
+                                            for (; newMatIndex <= state.materials.length; newMatIndex++) {
+                                                if (!state.materials[newMatIndex]) break;
+                                            }
+                                            iToMat.set(xyzi.i, newMatIndex);
                                             const color = colors[xyzi.i - 1];
                                             const material = {
                                                 color: "#" + new THREE.Color(color.r / 255, color.g / 255, color.b / 255).getHexString()
                                             }
-                                            state.materials.push(material);
+                                            state.materials[newMatIndex] = material;
                                             window.dispatchEvent(new CustomEvent("materialedit"));
                                             await new Promise<void>((resolve) => {
                                                 const materialRendered = () => {

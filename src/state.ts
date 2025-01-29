@@ -34,7 +34,9 @@ export type SharedState = {
     justSelectedMat: boolean,
     getCurrentMaterialIndex: () => number,
     exportOpen: boolean,
-    setExportOpen: (open: boolean) => void
+    setExportOpen: (open: boolean) => void,
+    isPickingMat: boolean,
+    selectedMat: number | null
 }
 
 export const state = reactive<SharedState>({
@@ -65,5 +67,7 @@ export const state = reactive<SharedState>({
     exportOpen: false,
     selectedMaterials: new Set(),
     justSelectedMat: false,
-    setExportOpen: () => {}
+    setExportOpen: () => {},
+    isPickingMat: false,
+    selectedMat: null
 });

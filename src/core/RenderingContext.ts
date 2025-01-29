@@ -365,7 +365,11 @@ class RenderingContext {
                             window.addEventListener("materialRendered", materialRendered);
                         });
                     }
-                    state.selectedMaterial = state.materials[0];
+                    let firstIndex = 0;
+                    for (; firstIndex <= state.materials.length; firstIndex++) {
+                        if (state.materials[firstIndex]) break;
+                    }
+                    state.selectedMaterial = state.materials[firstIndex];
                     resolve();
                 });
             });
@@ -612,30 +616,44 @@ class RenderingContext {
             }
             
             if (mesh && !(mesh as any).disableMouseEvents) {
-                mesh.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
-                if (!mesh.internal && state.currentMode === 'object') {
-                    if (!ev.shiftKey) {
-                        this.unselectAll();
+                if (state.isPickingMat && ev.button === 0 && mesh instanceof VoxelMesh) {
+                    const intersect = this.lastMeshIntersect as MouseEvent3d;
+                    let position = mesh.worldToLocal(intersect.intersect.point);
+                    position = position.add(intersect.intersect.normal?.clone().divideScalar(10) as THREE.Vector3).floor().addScalar(0.5);
+                    position = position.add(intersect.intersect.normal?.clone().ceil().multiplyScalar(-1) as THREE.Vector3).floor();
+                    const selectedMat = mesh.getVoxel(position.x, position.y, position.z) - 1;
+                    if (!state.materials[selectedMat]) {
+                        state.materials[selectedMat] = { color: '#000000' };
+                        window.dispatchEvent(new CustomEvent("materialedit"));
                     }
-                    if (!mesh.selected) {
-                        mesh.select();
-                        TransformationContext.INSTANCE.selectedObjects.push(mesh);
-                    } else if (ev.shiftKey) {
-                        mesh.unselect();
-                        let indexOfMesh = TransformationContext.INSTANCE.selectedObjects.indexOf(mesh);
-                        if (indexOfMesh !== -1) {
-                            TransformationContext.INSTANCE.selectedObjects.splice(indexOfMesh, 1);
+                    state.selectedMaterial = state.materials[selectedMat];
+                } else {
+                    mesh.invokeClickEvent(this.lastMeshIntersect as MouseEvent3d);
+                    if (!mesh.internal && state.currentMode === 'object') {
+                        if (!ev.shiftKey) {
+                            this.unselectAll();
                         }
-                    }
-                    
-                    if (this.outlinePass) {
-                        this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                        if (!mesh.selected) {
+                            mesh.select();
+                            TransformationContext.INSTANCE.selectedObjects.push(mesh);
+                        } else if (ev.shiftKey) {
+                            mesh.unselect();
+                            let indexOfMesh = TransformationContext.INSTANCE.selectedObjects.indexOf(mesh);
+                            if (indexOfMesh !== -1) {
+                                TransformationContext.INSTANCE.selectedObjects.splice(indexOfMesh, 1);
+                            }
+                        }
+                        
+                        if (this.outlinePass) {
+                            this.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                        }
                     }
                 }
             } else if (state.currentMode === 'object') {
                 this.unselectAll();
             }
         }
+        state.isPickingMat = false;
         this.isMouseDown[ev.button] = false;
         state.isMouseDown[ev.button] = false;
         this.isDragging[ev.button] = false;

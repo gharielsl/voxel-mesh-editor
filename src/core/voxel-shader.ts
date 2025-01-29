@@ -10,6 +10,7 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
     let uniforms = "";
 
     materials.forEach((material, index) => {
+        if (!material) return;
         const color = new THREE.Color(material.color).toArray();
         if (material.texture) {
             uniforms += `uniform sampler2D texture_${index + 1};`;
@@ -150,6 +151,7 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
     });
 
     materials.forEach((mat, index) => {
+        if (!mat) return;
         const i = ++index;
         if (mat.textureGl) {
             mat.textureGl.dispose();
