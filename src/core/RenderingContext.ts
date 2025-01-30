@@ -676,7 +676,7 @@ class RenderingContext {
             this.camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.camera.rotation.x));
             const forward = new THREE.Vector3();
             this.camera.getWorldDirection(forward);
-            this.controls.target = this.camera.position.clone().add(forward.multiplyScalar(100));
+            this.controls.target = this.camera.position.clone().add(forward.multiplyScalar(30));
         }
         for (let i = 0; i < this.isMouseDown.length; i++) {
             if (this.isMouseDown[i]) {
