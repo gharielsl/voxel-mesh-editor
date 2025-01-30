@@ -94,10 +94,10 @@ export default defineComponent({
 </script>
 
 <template>
-    <div class="object-options-list" v-if="state.multipleSelections">
+    <!-- <div class="object-options-list" v-if="state.multipleSelections">
         Multiple - {{ state.selectedObject?.constructor.name }}
-    </div>
-    <div class="object-options-list" v-else-if="state.selectedObject">
+    </div> -->
+    <div class="object-options-list" v-if="state.selectedObject">
         {{ state.selectedObject.constructor.name }}
         <div @click="collapse('position')" class="object-option-group-title" style="text-align: left;">
             <i :class="{'bi bi-caret-down-fill': positionOpen, 'bi bi-caret-right-fill': !positionOpen}"></i>

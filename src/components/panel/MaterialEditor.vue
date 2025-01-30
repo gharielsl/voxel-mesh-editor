@@ -37,14 +37,23 @@ export default defineComponent({
                 this.isPickingColor = false;
             }
         },
+        mouseMove(ev: MouseEvent) {
+            const pickerCursor = document.getElementById('pickerCursor');
+            pickerCursor.style.top = (ev.pageY - 16) + 'px';
+            pickerCursor.style.left = ev.pageX + 'px';
+        },
         pickMat() {
-            state.cursorShape = 'url(\'/voxel-mesh-editor/img/eyedropper.svg\'), auto';
+            // state.cursorShape = 'url(\'/voxel-mesh-editor/img/eyedropper.svg\'), auto';
+            state.cursorShape = 'none';
+            const pickerCursor = document.getElementById('pickerCursor');
+            pickerCursor.style.display = 'block';
             state.isPickingMat = true;
             const handlemousedown = (ev: MouseEvent) => {
                 if (ev.button !== 0) {
                     return;
                 }
                 state.cursorShape = 'unset';
+                pickerCursor.style.display = 'none';
                 const rect = state.renderingContext().canvas.getBoundingClientRect();
                 const isInsideCanvas =
                     ev.clientX >= rect.left &&
@@ -60,10 +69,13 @@ export default defineComponent({
         }
     },
     mounted() {
+        console.log(this);
         window.addEventListener("mouseup", this.mouseUp);
+        window.addEventListener("mousemove", this.mouseMove);
     },
     unmounted() {
         window.removeEventListener("mouseup", this.mouseUp);
+        window.removeEventListener("mousemove", this.mouseMove);
     },
     data() {
         return {
@@ -87,13 +99,13 @@ export default defineComponent({
 <template>
     <div class="material-editor">
         <div class="material-editor-title">
-            <div @click="pickMat" :class="{'btn': true, 'pick': state.isPickingMat}"><i class="bi bi-eyedropper"></i></div>
+            <div @click="pickMat" class="btn" :class="{ pick: state.isPickingMat }"><i class="bi bi-eyedropper"></i></div>
             <div>Selected - Material {{ state.materials.indexOf(state.selectedMaterial as VoxelMaterial) }}</div>
             <div></div>
         </div>
     </div>
     <div v-if="state.selectedMaterial" class="material-properties">
-        <div :class="{'object-option-group': true, 'color': true, 'collapse': !colorOpen}" style="margin-top: 8px;">
+        <div class="object-option-group color" :class="{ collapse: !colorOpen}" style="margin-top: 8px;">
             <div @click="colorOpen = !colorOpen" class="group-title">
                 <i :class="colorOpen ? 'bi bi-caret-down-fill' : 'bi bi-caret-right-fill'"></i>
                 <h5 style="margin-left: 8px;">Color</h5>
@@ -102,7 +114,7 @@ export default defineComponent({
                 <Vue3ColorPicker @update:modelValue="colorChange" :modelValue="state.selectedMaterial.color || '#ffffff'" mode="solid" :showPickerMode="false" :showColorList="false" :showEyeDrop="false" type="RGBA" theme="dark" :showAlpha="false" style="width: 256px"/>
             </div>
         </div>
-        <div :class="{'object-option-group': true, 'collapse': !textureOpen}" style="margin-top: 8px;">
+        <div class="object-option-group" :class="{ collapse: !textureOpen }" style="margin-top: 8px;">
             <div @click="textureOpen = !textureOpen" class="group-title">
                 <i :class="textureOpen ? 'bi bi-caret-down-fill' : 'bi bi-caret-right-fill'"></i>
                 <h5 style="margin-left: 8px;">Texture</h5>
@@ -111,7 +123,7 @@ export default defineComponent({
                 <ImageUpload :value="state.selectedMaterial?.texture" @selectImage="selectTexture" />
             </div>
         </div>
-        <div :class="{'object-option-group': true, 'collapse': !normalOpen}" style="margin-top: 8px;margin-bottom: 8px;">
+        <div class="object-option-group" :class="{ collapse: !normalOpen }" style="margin-top: 8px;margin-bottom: 8px;">
             <div @click="normalOpen = !normalOpen" class="group-title">
                 <i :class="normalOpen ? 'bi bi-caret-down-fill' : 'bi bi-caret-right-fill'"></i>
                 <h5 style="margin-left: 8px;">Normal Texture</h5>

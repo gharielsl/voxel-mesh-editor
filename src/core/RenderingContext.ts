@@ -60,6 +60,8 @@ class RenderingContext {
             canvas,
             context: canvas.getContext("webgl2") as WebGL2RenderingContext
         });
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.effectComposter = new EffectComposer(this.renderer);
         this.scene = new THREE.Scene();
         this.scene.userData.isRootScene = true;
@@ -840,8 +842,13 @@ class RenderingContext {
             //     this.unselectAll();
             // }
         }
-        this.ghostLight.position.set(1100, 1000, 900);
-        this.nGhostLight.position.set(-900, -1000, -1100);
+        this.ghostLight.shadow.mapSize.width = 2048;
+        this.ghostLight.shadow.mapSize.height = 2048;
+        this.ghostLight.shadow.camera.near = 0.1;
+        this.ghostLight.shadow.camera.far = 1000;
+        this.ghostLight.shadow.normalBias = 0.1;
+        this.ghostLight.position.set(110, 100, 90);
+        this.nGhostLight.position.set(-90, -100, -110);
         this.scene.add(this.ghostLight);
         this.scene.add(this.nGhostLight);
         this.scene.add(this.ambientLight);
