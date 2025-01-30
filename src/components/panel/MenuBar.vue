@@ -111,6 +111,7 @@ import readVox from 'voxbe59s14nd003i';
                     const reader = new FileReader();
                     reader.onload = async () => {
                         const { result, riffData } = (readVox as any)(new Uint8Array(reader.result as ArrayBuffer));
+                        console.log((readVox as any)(new Uint8Array(reader.result as ArrayBuffer)));
 
                         const voxelMesh = new VoxelMesh();
                         const iToMat = new Map<number, number>();
