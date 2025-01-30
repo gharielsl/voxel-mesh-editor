@@ -47,6 +47,7 @@ export default defineComponent({
             if (value === 'Shadows') {
                 state.renderingContext().scene.traverse((child) => {
                     if (child instanceof THREE.LineSegments) return;
+                    if (child instanceof THREE.AmbientLight) return;
                     if (child === state.renderingContext().lineX) return;
                     if (child === state.renderingContext().lineZ) return;
                     if (child === state.renderingContext().grid) return;
