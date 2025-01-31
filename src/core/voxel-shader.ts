@@ -2,7 +2,7 @@ import CustomMaterial from "three-custom-shader-material/vanilla";
 import * as THREE from "three";
 import { state } from "../state";
 
-function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffset = false) {
+function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffset = false, isBake = false) {
 
     const materials = state.materials;
 
@@ -140,7 +140,8 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
             accumulatedNormal /= totalNormalWeight;
         }
         
-        csm_DiffuseColor = vec4(accumulatedColor, 1);
+        ${isBake ? "csm_FragColor  = vec4(accumulatedColor, 1);" : "csm_DiffuseColor = vec4(accumulatedColor, 1);"}
+
         if (marchCubes == 0 && cubeHasNormal) {
             csm_Bump  = accumulatedNormal;
         } else if (totalNormalWeight > 0.0) {

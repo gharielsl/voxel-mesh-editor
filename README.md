@@ -27,13 +27,13 @@ It allows to import and voxelize 3D models, sculpt with voxels, and to smooth ou
 - Materials
     - [x] Selection
     - [x] Voxel mesh shader
-    - [ ] Delete / Replace / Move
+    - [x] Delete / Rename
 - Import/Export
     - [x] Save/Open
     - [x] Import
     - [ ] Export .vox
     - [x] Export GLB/GLTF
-    - [ ] Bake textures
+    - [x] Bake textures
 - Misc
     - [ ] Measuring
     - [ ] First person walk

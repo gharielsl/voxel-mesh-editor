@@ -69,7 +69,6 @@ export default defineComponent({
         }
     },
     mounted() {
-        console.log(this);
         window.addEventListener("mouseup", this.mouseUp);
         window.addEventListener("mousemove", this.mouseMove);
     },

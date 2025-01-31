@@ -22,7 +22,7 @@ class VoxelMeshChunk extends THREE.Mesh {
     dataTextureBuffer: Uint8Array;
     wireframeGeometry?: THREE.EdgesGeometry;
     wireframeMesh: THREE.LineSegments;
-    
+
     constructor(voxelMesh: VoxelMesh, x: number, z: number) {
         super(new THREE.BoxGeometry(0, 0), createVoxelMaterial(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE));
         const shouldWireframeBeVisible = !voxelMesh.marchCubes && state.selectedObject?.id === voxelMesh.id && state.currentMode === 'sculpt';
@@ -143,6 +143,7 @@ class VoxelMeshChunk extends THREE.Mesh {
             this.updateBorders();
         }
         this.geometry.dispose();
+        const B = VoxelMeshChunk.CHUNK_BORDER_SIZE;
         const SB = VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER;
         const H = VoxelMeshChunk.CHUNK_HEIGHT;
         const positions: THREE.Vector3[] = [];
@@ -181,7 +182,8 @@ class VoxelMeshChunk extends THREE.Mesh {
                     if (!marchCubes && inner) {
                         continue;
                     }
-                    if (marchCubes || (this.data[x]?.[y]?.[z] || 0) !== 0) {
+                    const addCubes = (!marchCubes && (this.data[x]?.[y]?.[z] || 0) !== 0 && x >= B && z >= B && x < SB - B && z < SB - B)
+                    if (marchCubes || addCubes) {
                         marchCube(
                             new THREE.Vector3(x, y, z), 
                             this.data, 
@@ -290,12 +292,15 @@ class VoxelMeshChunk extends THREE.Mesh {
     }
 
     createExportGeometry = () => {
-        const index = this.geometry?.index?.array.reverse() as unknown as number[];
+        if (!this.voxelMesh.marchCubes) {
+            return this.geometry.clone();
+        }
+        const index = this.geometry?.index?.array;
         const vertex = this.geometry?.getAttribute("position").array;
         if (!index || !vertex) {
             return null;
         }
-        const B = VoxelMeshChunk.CHUNK_BORDER_SIZE;
+        const B = VoxelMeshChunk.CHUNK_BORDER_SIZE + 0.0001;
         const S = VoxelMeshChunk.CHUNK_SIZE;
         const geometry = new THREE.BufferGeometry();
         const exportVertex: THREE.Vector3[] = [];
@@ -313,8 +318,10 @@ class VoxelMeshChunk extends THREE.Mesh {
             v1.set(vertex[i1], vertex[i1 + 1], vertex[i1 + 2]);
             v2.set(vertex[i2], vertex[i2 + 1], vertex[i2 + 2]);
             const center = v0.clone().add(v1).add(v2).divideScalar(3);
-            if (center.x > B && center.x < S + B && 
-                center.z > B && center.z < S + B) {
+            // if (center.x >= B && center.x <= S + B && 
+            //     center.z >= B && center.z <= S + B) {
+            if (center.x >= 0 && center.x <= S && 
+                center.z >= 0 && center.z <= S) {
                 [v0, v1, v2].forEach((v) => {
                     if ((this.voxelMesh.smoothNormals || this.voxelMesh.smoothGeometry) && vertexMap.has(hash(v))) {
                         exportIndex.push(vertexMap.get(hash(v)) as number);
@@ -333,7 +340,7 @@ class VoxelMeshChunk extends THREE.Mesh {
             positionsArray[i * 3 + 2] = exportVertex[i].z;
         }
         geometry.setAttribute("position", new THREE.BufferAttribute(positionsArray, 3));
-        geometry.setIndex(exportIndex.reverse());
+        geometry.setIndex(exportIndex);
         geometry.computeVertexNormals();
         return geometry;
     }

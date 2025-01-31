@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { cornerTable, edgeTable, triTable } from "./marching-cubes-tables";
+import VoxelMeshChunk from "../VoxelMeshChunk";
 
 const TerrainSurface = 0.5;
 
