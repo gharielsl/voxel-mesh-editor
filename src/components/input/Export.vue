@@ -8,7 +8,7 @@ import { GLTFExporter } from "three/examples/jsm/Addons.js";
 import VoxelMeshChunk from "../../core/VoxelMeshChunk";
 import VoxelMesh from "../../core/VoxelMesh";
 import { getTextureAsDataUrl, ShaderBaker } from "three-shader-baker";
-import { createVoxelMaterial } from "../../core/voxel-shader";
+import { createVoxelMaterial, createVoxelMaterialAsync } from "../../core/voxel-shader";
 
 export default defineComponent({
     components: {
@@ -96,11 +96,12 @@ export default defineComponent({
                     const prevGeometry = chunk.geometry;
                     const prevMaterial = chunk.material;
                     chunk.geometry = geometry;
-                    chunk.material = createVoxelMaterial(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, (prevMaterial as any).polygonOffset, true);
+                    chunk.material = await createVoxelMaterialAsync(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, false, true);
 
                     result = baker.bake(state.renderingContext().renderer, chunk);
                     const texUrl = getTextureAsDataUrl(state.renderingContext().renderer, result.texture);
                     chunk.geometry = prevGeometry;
+                    chunk.material.dispose();
                     chunk.material = prevMaterial;
                     this.transformUvs(geometry, (u, v) => {
                         return new THREE.Vector2(u, -v + 1);

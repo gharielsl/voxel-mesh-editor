@@ -2,7 +2,84 @@ import CustomMaterial from "three-custom-shader-material/vanilla";
 import * as THREE from "three";
 import { state } from "../state";
 
-function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffset = false, isBake = false) {
+
+function setUniforms(material: THREE.ShaderMaterial) {
+    state.materials.forEach((mat, index) => {
+        if (!mat) return;
+        const i = ++index;
+        if (mat.textureGl) {
+            mat.textureGl.dispose();
+        }
+        if (mat.normalGl) {
+            mat.normalGl.dispose();
+        }
+        if (mat.texture) {
+            const tex = new THREE.TextureLoader().load(mat.texture);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            mat.textureGl = tex;
+            if (!material.uniforms["texture_" + i]) {
+                material.uniforms["texture_" + i] = { value: null };
+            }
+            material.uniforms["texture_" + i].value = tex;
+        } else {
+            delete material.uniforms["texture_" + i];
+        }
+        if (mat.normal) {
+            const tex = new THREE.TextureLoader().load(mat.normal);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            mat.textureGl = tex;
+            if (!material.uniforms["texture_" + i + "_n"]) {
+                material.uniforms["texture_" + i + "_n"] = { value: null };
+            }
+            material.uniforms["texture_" + i + "_n"].value = tex;
+        } else {
+            delete material.uniforms["texture_" + i + "_n"];
+        }
+    });
+}
+
+async function setUniformsAsync(material: THREE.ShaderMaterial) {
+    let index = 0;
+    for await (const mat of state.materials) {
+        if (!mat) continue;
+        const i = ++index;
+        if (mat.textureGl) {
+            mat.textureGl.dispose();
+        }
+        if (mat.normalGl) {
+            mat.normalGl.dispose();
+        }
+        if (mat.texture) {
+            const tex = await new THREE.TextureLoader().loadAsync(mat.texture);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            mat.textureGl = tex;
+            if (!material.uniforms["texture_" + i]) {
+                material.uniforms["texture_" + i] = { value: null };
+            }
+            material.uniforms["texture_" + i].value = tex;
+        } else {
+            delete material.uniforms["texture_" + i];
+        }
+        if (mat.normal) {
+            const tex = await new THREE.TextureLoader().loadAsync(mat.normal);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            mat.textureGl = tex;
+            if (!material.uniforms["texture_" + i + "_n"]) {
+                material.uniforms["texture_" + i + "_n"] = { value: null };
+            }
+            material.uniforms["texture_" + i + "_n"].value = tex;
+        } else {
+            delete material.uniforms["texture_" + i + "_n"];
+        }
+        index++;
+    }
+}
+
+function _createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffset = false, isBake = false) {
 
     const materials = state.materials;
 
@@ -151,44 +228,22 @@ function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffse
         `
     });
 
-    materials.forEach((mat, index) => {
-        if (!mat) return;
-        const i = ++index;
-        if (mat.textureGl) {
-            mat.textureGl.dispose();
-        }
-        if (mat.normalGl) {
-            mat.normalGl.dispose();
-        }
-        if (mat.texture) {
-            const tex = new THREE.TextureLoader().load(mat.texture);
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            mat.textureGl = tex;
-            if (!material.uniforms["texture_" + i]) {
-                material.uniforms["texture_" + i] = { value: null };
-            }
-            material.uniforms["texture_" + i].value = tex;
-        } else {
-            delete material.uniforms["texture_" + i];
-        }
-        if (mat.normal) {
-            const tex = new THREE.TextureLoader().load(mat.normal);
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            mat.textureGl = tex;
-            if (!material.uniforms["texture_" + i + "_n"]) {
-                material.uniforms["texture_" + i + "_n"] = { value: null };
-            }
-            material.uniforms["texture_" + i + "_n"].value = tex;
-        } else {
-            delete material.uniforms["texture_" + i + "_n"];
-        }
-    });
-
     return material as any as THREE.MeshPhysicalMaterial;
 }
 
+function createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffset = false, isBake = false) {
+    const material = _createVoxelMaterial(chunkSize, borderSize, polygonOffset, isBake);
+    setUniforms(material as unknown as THREE.ShaderMaterial);
+    return material;
+}
+
+async function createVoxelMaterialAsync(chunkSize: number, borderSize: number, polygonOffset = false, isBake = false) {
+    const material = _createVoxelMaterial(chunkSize, borderSize, polygonOffset, isBake);
+    await setUniformsAsync(material as unknown as THREE.ShaderMaterial);
+    return material;
+}
+
 export {
-    createVoxelMaterial
+    createVoxelMaterial,
+    createVoxelMaterialAsync
 };
