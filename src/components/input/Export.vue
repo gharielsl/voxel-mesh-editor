@@ -125,7 +125,7 @@ export default defineComponent({
                     chunk.material = await createVoxelMaterialAsync(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, false, true);
 
                     result = baker.bake(state.renderingContext().renderer, chunk, {
-                        size: 4096
+                        size: 2048
                     });
                     const texUrl = getTextureAsDataUrl(state.renderingContext().renderer, result.texture);
                     chunk.geometry = prevGeometry;
