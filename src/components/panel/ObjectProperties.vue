@@ -6,13 +6,29 @@ import VoxelMesh from '../../core/VoxelMesh';
 import NumberInput from '../input/NumberInput.vue';
 import Vector3Input from '../input/Vector3Input.vue';
 import MeshObject from '../../core/MeshObject';
+import { Vue3ColorPicker } from "@cyhnkckali/vue3-color-picker";
+import { radToDeg } from "three/src/math/MathUtils.js";
 
 export default defineComponent({
     components: {
         NumberInput,
-        Vector3Input
+        Vector3Input,
+        Vue3ColorPicker
     },
     methods: {
+        radToDeg,
+        rgbaToHex(rgba: string) {
+            const result = rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+),\s*(\d*\.?\d+)\)$/);
+            const r = parseInt(result[1], 10);
+            const g = parseInt(result[2], 10);
+            const b = parseInt(result[3], 10);
+            const a = parseFloat(result[4]);
+            const red = r.toString(16).padStart(2, '0');
+            const green = g.toString(16).padStart(2, '0');
+            const blue = b.toString(16).padStart(2, '0');
+            const alpha = Math.round(a * 255).toString(16).padStart(2, '0');
+            return `#${red}${green}${blue}${alpha}`;
+        },
         marchCubes(event: any) {
             if (state.selectedObject instanceof VoxelMesh) {
                 state.selectedObject.marchCubes = event.target.checked;
@@ -49,9 +65,9 @@ export default defineComponent({
         },
         rotationChange(v: THREE.Vector3) {
             if (state.selectedObject) {
-                state.selectedObject.rotation.x = v.x;
-                state.selectedObject.rotation.y = v.y;
-                state.selectedObject.rotation.z = v.z;
+                state.selectedObject.rotation.x = THREE.MathUtils.degToRad(v.x);
+                state.selectedObject.rotation.y = THREE.MathUtils.degToRad(v.y);
+                state.selectedObject.rotation.z = THREE.MathUtils.degToRad(v.y);
             }
         },
         collapse(what: string) {
@@ -62,15 +78,27 @@ export default defineComponent({
                 el.style.maxHeight = el.scrollHeight + 'px';
             }
             (this as any)[what + 'Open'] = !(this as any)[what + 'Open'];
+        },
+        mousedown(ev: MouseEvent) {
+            if (!this.shouldColorPicker1Open) {
+                this.backgroundColorPickerOpen = false;
+            }
+            this.shouldColorPicker1Open = false;
+        },
+        backgroundColorChange(newColor: string) {
+            this.backgroundColor = this.rgbaToHex(newColor);
         }
     },
     mounted() {
         this.interval = setInterval(() => {
             this.$forceUpdate();
         }, 50);
+        window.addEventListener('click', this.mousedown);
+        this.backgroundColor = '#' + state.renderingContext().renderer.getClearColor(new THREE.Color()).getHexString();
     },
     unmounted() {
         clearInterval(this.interval);
+        window.removeEventListener('click', this.mousedown);
     },
     updated() {
         ['position', 'scale', 'rotation', 'voxel'].forEach((i) => {
@@ -87,7 +115,14 @@ export default defineComponent({
             positionOpen: true,
             scaleOpen: true,
             rotationOpen: true,
-            voxelOpen: true
+            voxelOpen: true,
+            backgroundColor: '#000000',
+            backgroundColorPickerOpen: false
+        }
+    },
+    setup() {
+        return {
+            shouldColorPicker1Open: false
         }
     }
 });
@@ -129,9 +164,9 @@ export default defineComponent({
         </div>
         <div class="object-option-group" ref="rotation" :class="{'collapse': !rotationOpen}">
             <Vector3Input 
-                :xp="(state.selectedObject as MeshObject).rotation.x || 0" 
-                :yp="(state.selectedObject as MeshObject).rotation.y || 0" 
-                :zp="(state.selectedObject as MeshObject).rotation.z || 0" 
+                :xp="radToDeg((state.selectedObject as MeshObject).rotation.x || 0)" 
+                :yp="radToDeg((state.selectedObject as MeshObject).rotation.y || 0)" 
+                :zp="radToDeg((state.selectedObject as MeshObject).rotation.z || 0)" 
                 @changeValue="rotationChange"
                 />
         </div>
@@ -161,6 +196,24 @@ export default defineComponent({
     </div>
     <div class="object-options-list" v-else>
         No object selected
+        <!-- <div class="object-option-group-title" style="text-align: left;">
+            <i class="bi bi-caret-down-fill"></i>
+            <h5 style="margin-left: 8px;">Background</h5>
+        </div>
+        
+        <div class="object-option-group">
+            <div class="object-option">
+                <h5>Color</h5>
+                <div @click="backgroundColorPickerOpen = true; shouldColorPicker1Open = true;" class="color-picker-btn" :style="'background-color: ' + backgroundColor">
+                    {{ backgroundColor }}
+                    <Vue3ColorPicker v-if="backgroundColorPickerOpen" @update:modelValue="backgroundColorChange" class="color-picker-1" mode="solid" :modelValue="backgroundColor" :showPickerMode="false" :showColorList="false" :showEyeDrop="false" type="RGBA" theme="dark" :showAlpha="false" style="width: 256px"/>
+                </div>
+            </div>
+            <div class="object-option">
+                <h5>Sky box</h5>
+                <input type="checkbox">
+            </div>
+        </div> -->
     </div>
     <div class="object-option-group-title" style="text-align: left;">
         <h5></h5>
@@ -189,16 +242,36 @@ export default defineComponent({
         border-radius: 8px;
         background-color: var(--color-foreground-2);
         transition: max-height 0.3s ease-in-out;
-        overflow: hidden;
     }
     .object-option-group.collapse {
         transition: max-height 0.3s ease-out;
         max-height: 0;
+        overflow: hidden;
     }
     .object-options-list {
         margin-top: 8px;
         display: flex;
         flex-direction: column;
         align-items: center;
+    }
+
+    .color-picker-btn {
+        position: relative;
+        color: #676767;
+        border: 1px white solid;
+        border-radius: 4px;
+        width: 144px;
+        height: 24px;
+    }
+
+    .color-picker-btn:hover {
+        cursor: pointer;
+    }
+
+    .color-picker-1 {
+        position: absolute;
+        top: 26px;
+        left: -111px;
+        border: 1px #676767 solid;
     }
 </style>

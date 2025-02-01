@@ -35,6 +35,32 @@ export default defineComponent({
             }
             geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
         },
+        scaleUvTris(geometry: THREE.BufferGeometry, scale: THREE.Vector2) {
+            const uvs = geometry.attributes.uv.array;
+            const numVertices = uvs.length / 2;
+            
+            for (let i = 0; i < numVertices; i += 3) {
+                const u0 = uvs[i * 2];
+                const v0 = uvs[i * 2 + 1];
+                const u1 = uvs[(i + 1) * 2];
+                const v1 = uvs[(i + 1) * 2 + 1];
+                const u2 = uvs[(i + 2) * 2];
+                const v2 = uvs[(i + 2) * 2 + 1];
+                
+                const centerU = (u0 + u1 + u2) / 3;
+                const centerV = (v0 + v1 + v2) / 3;
+                
+                uvs[i * 2] = (u0 - centerU) * scale.x + centerU;
+                uvs[i * 2 + 1] = (v0 - centerV) * scale.y + centerV;
+
+                uvs[(i + 1) * 2] = (u1 - centerU) * scale.x + centerU;
+                uvs[(i + 1) * 2 + 1] = (v1 - centerV) * scale.y + centerV;
+
+                uvs[(i + 2) * 2] = (u2 - centerU) * scale.x + centerU;
+                uvs[(i + 2) * 2 + 1] = (v2 - centerV) * scale.y + centerV;
+            }
+            geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+        },
         transformUvs(geometry: THREE.BufferGeometry, transform: (u: number, v: number) => THREE.Vector2) {
             const uvs = geometry.attributes.uv.array;
 
@@ -98,7 +124,9 @@ export default defineComponent({
                     chunk.geometry = geometry;
                     chunk.material = await createVoxelMaterialAsync(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, false, true);
 
-                    result = baker.bake(state.renderingContext().renderer, chunk);
+                    result = baker.bake(state.renderingContext().renderer, chunk, {
+                        size: 4096
+                    });
                     const texUrl = getTextureAsDataUrl(state.renderingContext().renderer, result.texture);
                     chunk.geometry = prevGeometry;
                     chunk.material.dispose();
@@ -106,6 +134,7 @@ export default defineComponent({
                     this.transformUvs(geometry, (u, v) => {
                         return new THREE.Vector2(u, -v + 1);
                     });
+                    this.scaleUvTris(geometry, new THREE.Vector2(0.8, 0.8));
                     exportMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
                         map: await new THREE.TextureLoader().loadAsync(texUrl)
                     }));

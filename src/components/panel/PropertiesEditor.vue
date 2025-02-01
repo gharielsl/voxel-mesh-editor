@@ -20,8 +20,8 @@ import { state } from '../../state';
                     if ((document.getElementById('editor-canvas') as HTMLCanvasElement).width < 864) {
                         properties.style.width = (window.innerWidth - 864) + 'px';
                     }
-                    if (+properties.style.width.replace('px', '') < 256) {
-                        properties.style.width = '256px';
+                    if (+properties.style.width.replace('px', '') < 264) {
+                        properties.style.width = '264px';
                     }
                 }
             },
@@ -32,8 +32,8 @@ import { state } from '../../state';
                     if (properties) {
                         properties.style.width = (+properties.style.width.replace('px', '') - ev.movementX) + 'px';
                     }
-                    if (+properties.style.width.replace('px', '') < 256) {
-                        properties.style.width = '256px';
+                    if (+properties.style.width.replace('px', '') < 264) {
+                        properties.style.width = '264px';
                     }
                 }
             },
