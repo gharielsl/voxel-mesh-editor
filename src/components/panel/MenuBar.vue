@@ -7,6 +7,7 @@ import TransformationContext from '../../core/TransformationContext';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import MeshObject from '../../core/MeshObject';
 import readVox from 'voxbe59s14nd003i';
+import { exportScene } from '../../core/export/export-util';
 
 export default defineComponent({
     methods: {
@@ -232,6 +233,10 @@ export default defineComponent({
         openFile() {
             state.renderingContext().open();
             this.close("mouseInFile");
+        },
+        exportModel(format: "glb" | "gltf") {
+            exportScene(this.selectedOnly, this.visibleOnly, format);
+            this.close("mouseInFile");
         }
     },
     data() {
@@ -243,6 +248,8 @@ export default defineComponent({
             hoverInEdit: false,
             hoverInAdd: false,
             isAnyOpen: false,
+            selectedOnly: false,
+            visibleOnly: true,
             state
         }
     },
@@ -264,40 +271,60 @@ export default defineComponent({
                     <div :class="'menu-item-button ' + ((mouseInFile || hoverInFile) ? 'menu-item-button-open' : '')">
                         File
                     </div>
-                    <div v-if="mouseInFile" class="menu-list">
-                        <div @click="openFile" class="menu-bar-item-btn">
-                            <div>Open</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + O)</div>
-                        </div>
-                        <div @click="save" class="menu-bar-item-btn">
-                            <div>Save</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + S)</div>
-                        </div>
-                        <div class="menu-bar-item-btn import">
-                            <div>Import</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)">></div>
-                            <div class="menu-bar-list-inner">
-                                <div @click.stop="importFile" class="menu-bar-item-btn">
-                                    <div>Import GLB/GLTF</div>
-                                    <div style="font-size: small; color: var(--color-text-disabled)"></div>
-                                </div>
-                                <div @click.stop="importVox" class="menu-bar-item-btn">
-                                    <div>Import VOX</div>
-                                    <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                    <div v-if="mouseInFile" class="menu-list-container">
+                        <div class="menu-list">
+                            <div @click="openFile" class="menu-bar-item-btn">
+                                <div>Open</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + O)</div>
+                            </div>
+                            <div @click="save" class="menu-bar-item-btn">
+                                <div>Save</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + S)</div>
+                            </div>
+                            <div class="menu-bar-item-btn inner">
+                                <div>Import</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">></div>
+                                <div class="menu-bar-list-inner-container">
+                                    <div class="menu-bar-list-inner">
+                                        <div @click.stop="importFile" class="menu-bar-item-btn">
+                                            <div>Import GLB/GLTF</div>
+                                            <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                                        </div>
+                                        <div @click.stop="importVox" class="menu-bar-item-btn">
+                                            <div>Import VOX</div>
+                                            <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <!-- <div @click.stop="importFile" class="menu-bar-item-btn">
-                            <div>Import GLB/GLTF</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)"></div>
-                        </div>
-                        <div @click.stop="importVox" class="menu-bar-item-btn">
-                            <div>Import VOX</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)"></div>
-                        </div> -->
-                        <div @click.stop="state.setExportOpen(true); close('mouseInFile')" class="menu-bar-item-btn">
-                            <div>Export</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                            <div class="menu-bar-item-btn inner">
+                                <div>Export</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">></div>
+                                <div class="menu-bar-list-inner-container">
+                                    <div class="menu-bar-list-inner">
+                                        <div class="menu-bar-item-btn option">
+                                            <div>Visible only</div>
+                                            <input :checked="visibleOnly" @change="visibleOnly = !visibleOnly" type="checkbox">
+                                        </div>
+                                        <div class="menu-bar-item-btn option">
+                                            <div>Selected only</div>
+                                            <input :checked="selectedOnly" @change="selectedOnly = !selectedOnly" type="checkbox">
+                                        </div>
+                                        <div @click="exportModel('glb')" class="menu-bar-item-btn">
+                                            <div>Export binary</div>
+                                            <div style="font-size: small; color: var(--color-text-disabled)">(*.glb)</div>
+                                        </div>
+                                        <div @click="exportModel('gltf')" class="menu-bar-item-btn">
+                                            <div>Export JSON</div>
+                                            <div style="font-size: small; color: var(--color-text-disabled)">(*.gltf)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- <div @click.stop="state.setExportOpen(true); close('mouseInFile')" class="menu-bar-item-btn">
+                                <div>Export</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">></div>
+                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -306,21 +333,23 @@ export default defineComponent({
                     <div :class="'menu-item-button ' + ((mouseInEdit || hoverInEdit) ? 'menu-item-button-open' : '')">
                         Edit
                     </div>
-                    <div v-if="mouseInEdit" class="menu-list">
-                        <div @click.stop="state.renderingContext()?.copy(); close('mouseInEdit')"
-                            class="menu-bar-item-btn">
-                            <div>Copy</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + C)</div>
-                        </div>
-                        <div @click.stop="state.renderingContext()?.paste(); close('mouseInEdit')"
-                            class="menu-bar-item-btn">
-                            <div>Paste</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + V)</div>
-                        </div>
-                        <div @click.stop="state.renderingContext()?.undo(); close('mouseInEdit')"
-                            class="menu-bar-item-btn">
-                            <div>Undo</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + Z)</div>
+                    <div v-if="mouseInEdit" class="menu-list-container">
+                        <div class="menu-list">
+                            <div @click.stop="state.renderingContext()?.copy(); close('mouseInEdit')"
+                                class="menu-bar-item-btn">
+                                <div>Copy</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + C)</div>
+                            </div>
+                            <div @click.stop="state.renderingContext()?.paste(); close('mouseInEdit')"
+                                class="menu-bar-item-btn">
+                                <div>Paste</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + V)</div>
+                            </div>
+                            <div @click.stop="state.renderingContext()?.undo(); close('mouseInEdit')"
+                                class="menu-bar-item-btn">
+                                <div>Undo</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + Z)</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -329,14 +358,16 @@ export default defineComponent({
                     <div :class="'menu-item-button ' + ((mouseInAdd || hoverInAdd) ? 'menu-item-button-open' : '')">
                         Add
                     </div>
-                    <div v-if="mouseInAdd" class="menu-list">
-                        <div @click.stop="addVoxelMesh" class="menu-bar-item-btn">
-                            <div>Voxel Mesh</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)">(5x5x5)</div>
-                        </div>
-                        <div @click.stop="addVoxel" class="menu-bar-item-btn">
-                            <div>Voxel</div>
-                            <div style="font-size: small; color: var(--color-text-disabled)">(1x1x1)</div>
+                    <div v-if="mouseInAdd" class="menu-list-container">
+                        <div class="menu-list">
+                            <div @click.stop="addVoxelMesh" class="menu-bar-item-btn">
+                                <div>Voxel Mesh</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(5x5x5)</div>
+                            </div>
+                            <div @click.stop="addVoxel" class="menu-bar-item-btn">
+                                <div>Voxel</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(1x1x1)</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -399,11 +430,21 @@ export default defineComponent({
     padding-right: 8px;
 }
 
-.menu-list {
+.menu-list-container {
     position: absolute;
     z-index: 999;
     top: 32px;
-    left: 0;
+    left: -32px;
+    padding-bottom: 32px;
+    padding-left: 32px;
+    padding-right: 32px;
+}
+
+.menu-list {
+    /* position: absolute;
+    z-index: 999;
+    top: 32px;
+    left: 0; */
     width: 233px;
     display: flex;
     flex-direction: column;
@@ -455,26 +496,32 @@ export default defineComponent({
     cursor: pointer;
 }
 
-.menu-bar-item-btn.import {
+.menu-bar-item-btn.inner {
     position: relative;
     overflow: hidden;
 }
 
-.menu-bar-item-btn.import:hover {
+.menu-bar-item-btn.inner:hover {
     overflow: visible;
 }
 
 .menu-bar-list-inner {
-    position: absolute; 
-    right: -246px; 
-    top: 0; 
     width: 244px; 
     display: flex; 
     flex-direction: column;
     background-color: var(--color-foreground-1);
     border: 1px solid var(--color-foreground-2);
-    border-radius: 6px;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
+}
+
+.menu-bar-list-inner-container {
+    padding: 32px;
+    position: absolute; 
+    top: -32px; 
+    right: calc(-246px - 32px); 
+}
+
+.menu-bar-item-btn.option:hover {
+    cursor: initial !important;
+    background-color: unset !important;
 }
 </style>
