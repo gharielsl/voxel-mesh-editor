@@ -9,7 +9,7 @@ The **Voxel Mesh Editor** is a tool for creating and editing voxel-based 3D mode
 
 It allows to import and voxelize 3D models, sculpt with voxels, and to smooth out voxel meshes.
 
-### Current and future features: 
+### Features: 
 - Object mode
     - [x] Copy paste
     - [x] Transform
@@ -19,6 +19,8 @@ It allows to import and voxelize 3D models, sculpt with voxels, and to smooth ou
     - [x] Add/Remove
     - [x] Spray
     - [x] Select
+    - [ ] Replace
+    - [ ] Copy/Paste
 - Scene tree and property editor
     - [x] Hide/Show/Select
     - [x] March cubes
@@ -28,16 +30,16 @@ It allows to import and voxelize 3D models, sculpt with voxels, and to smooth ou
     - [x] Selection
     - [x] Voxel mesh shader
     - [x] Delete / Rename
+    - [ ] Palettes
 - Import/Export
     - [x] Save/Open
     - [x] Import
     - [ ] Export .vox
     - [x] Export GLB/GLTF
     - [x] Bake textures
-- Misc
-    - [ ] Measuring
-    - [ ] First person walk
-    - [ ] 3d annotations
+    - [ ] Flawless marching cubes export
+- Animation
+    - Not happening any time soon
 
 ## Controls
 
@@ -68,6 +70,6 @@ It allows to import and voxelize 3D models, sculpt with voxels, and to smooth ou
 - On the properties panel tick `march cubes`.
 - Tick `smooth`.
 
-### 5 different smoothing stages
+### 5 smoothing stages
 
 ![](images/detail.png)
