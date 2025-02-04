@@ -10,7 +10,8 @@ export default defineComponent({
     props: {
         xp: Number,
         yp: Number,
-        zp: Number
+        zp: Number,
+        unit: String
     },
     emits: {
         changeValue: (v: THREE.Vector3) => {
@@ -52,15 +53,15 @@ export default defineComponent({
 <template>
     <div class="container">
         <h5>X:</h5>
-        <NumberInput @changeValue="xc" unit="m" :value="xp" />
+        <NumberInput @changeValue="xc" :unit="unit || 'm'" :value="xp" />
     </div>
     <div class="container">
         <h5>Y:</h5>
-        <NumberInput @changeValue="yc" unit="m" :value="yp" />
+        <NumberInput @changeValue="yc" :unit="unit || 'm'" :value="yp" />
     </div>
     <div class="container">
         <h5>Z:</h5>
-        <NumberInput @changeValue="zc" unit="m" :value="zp" />
+        <NumberInput @changeValue="zc" :unit="unit || 'm'" :value="zp" />
     </div>
 </template>
 

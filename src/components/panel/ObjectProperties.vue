@@ -67,7 +67,7 @@ export default defineComponent({
             if (state.selectedObject) {
                 state.selectedObject.rotation.x = THREE.MathUtils.degToRad(v.x);
                 state.selectedObject.rotation.y = THREE.MathUtils.degToRad(v.y);
-                state.selectedObject.rotation.z = THREE.MathUtils.degToRad(v.y);
+                state.selectedObject.rotation.z = THREE.MathUtils.degToRad(v.z);
             }
         },
         collapse(what: string) {
@@ -167,6 +167,7 @@ export default defineComponent({
                 :xp="radToDeg((state.selectedObject as MeshObject).rotation.x || 0)" 
                 :yp="radToDeg((state.selectedObject as MeshObject).rotation.y || 0)" 
                 :zp="radToDeg((state.selectedObject as MeshObject).rotation.z || 0)" 
+                unit="deg"
                 @changeValue="rotationChange"
                 />
         </div>
