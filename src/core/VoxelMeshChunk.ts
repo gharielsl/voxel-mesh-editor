@@ -318,10 +318,8 @@ class VoxelMeshChunk extends THREE.Mesh {
             v1.set(vertex[i1], vertex[i1 + 1], vertex[i1 + 2]);
             v2.set(vertex[i2], vertex[i2 + 1], vertex[i2 + 2]);
             const center = v0.clone().add(v1).add(v2).divideScalar(3);
-            // if (center.x >= B && center.x <= S + B && 
-            //     center.z >= B && center.z <= S + B) {
-            if (center.x >= 0 && center.x <= S && 
-                center.z >= 0 && center.z <= S) {
+            if (center.x >= B && center.x <= S + B && 
+                center.z >= B && center.z <= S + B) {
                 [v0, v1, v2].forEach((v) => {
                     if ((this.voxelMesh.smoothNormals || this.voxelMesh.smoothGeometry) && vertexMap.has(hash(v))) {
                         exportIndex.push(vertexMap.get(hash(v)) as number);
