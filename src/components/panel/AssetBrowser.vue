@@ -52,10 +52,14 @@ import { filter } from 'jszip';
                 });
             },
             areAllMatsSelected() {
+                let matsLength = 0;
+                state.materials.forEach((mat) => {
+                    if (mat) matsLength++;
+                })
                 if (state.selectedMaterials.has(state.selectedMaterial)) {
-                    return state.selectedMaterials.size === state.materials.length;
+                    return state.selectedMaterials.size === matsLength;
                 }
-                return state.selectedMaterials.size === state.materials.length - 1; 
+                return state.selectedMaterials.size === matsLength - 1; 
             },
             deleteMats() {
                 let matsLength = 0;
