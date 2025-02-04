@@ -321,10 +321,6 @@ export default defineComponent({
                                     </div>
                                 </div>
                             </div>
-                            <!-- <div @click.stop="state.setExportOpen(true); close('mouseInFile')" class="menu-bar-item-btn">
-                                <div>Export</div>
-                                <div style="font-size: small; color: var(--color-text-disabled)">></div>
-                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -441,10 +437,6 @@ export default defineComponent({
 }
 
 .menu-list {
-    /* position: absolute;
-    z-index: 999;
-    top: 32px;
-    left: 0; */
     width: 233px;
     display: flex;
     flex-direction: column;

@@ -33,8 +33,6 @@ export type SharedState = {
     selectedMaterials: Set<VoxelMaterial>,
     justSelectedMat: boolean,
     getCurrentMaterialIndex: () => number,
-    exportOpen: boolean,
-    setExportOpen: (open: boolean) => void,
     isPickingMat: boolean,
     selectedMat: number | null
 }
@@ -64,10 +62,8 @@ export const state = reactive<SharedState>({
     pushAction: () => { },
     materials: [{ color: '#ffffff' }],
     getCurrentMaterialIndex: (): number => (state.materials.indexOf(state.selectedMaterial as VoxelMaterial) || 0) + 1,
-    exportOpen: false,
     selectedMaterials: new Set(),
     justSelectedMat: false,
-    setExportOpen: () => {},
     isPickingMat: false,
     selectedMat: null
 });

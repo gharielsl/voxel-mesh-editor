@@ -130,10 +130,8 @@ async function exportScene(selectedOnly: boolean, visibleOnly: boolean, format: 
         a.href = url;
         a.download = "scene." + format;
         a.click();
-        state.setExportOpen(false);
     }, (error) => {
         console.error(error);
-        state.setExportOpen(false);
     }, {
         binary: format === "glb"
     });
