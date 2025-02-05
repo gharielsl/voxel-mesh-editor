@@ -18,24 +18,24 @@ function setUniforms(material: THREE.ShaderMaterial) {
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.RepeatWrapping;
             mat.textureGl = tex;
-            if (!material.uniforms["texture_" + i]) {
-                material.uniforms["texture_" + i] = { value: null };
+            if (!material.uniforms["vox_texture_" + i]) {
+                material.uniforms["vox_texture_" + i] = { value: null };
             }
-            material.uniforms["texture_" + i].value = tex;
+            material.uniforms["vox_texture_" + i].value = tex;
         } else {
-            delete material.uniforms["texture_" + i];
+            delete material.uniforms["vox_texture_" + i];
         }
         if (mat.normal) {
             const tex = new THREE.TextureLoader().load(mat.normal);
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.RepeatWrapping;
             mat.textureGl = tex;
-            if (!material.uniforms["texture_" + i + "_n"]) {
-                material.uniforms["texture_" + i + "_n"] = { value: null };
+            if (!material.uniforms["vox_texture_" + i + "_n"]) {
+                material.uniforms["vox_texture_" + i + "_n"] = { value: null };
             }
-            material.uniforms["texture_" + i + "_n"].value = tex;
+            material.uniforms["vox_texture_" + i + "_n"].value = tex;
         } else {
-            delete material.uniforms["texture_" + i + "_n"];
+            delete material.uniforms["vox_texture_" + i + "_n"];
         }
     });
 }
@@ -56,31 +56,30 @@ async function setUniformsAsync(material: THREE.ShaderMaterial) {
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.RepeatWrapping;
             mat.textureGl = tex;
-            if (!material.uniforms["texture_" + i]) {
-                material.uniforms["texture_" + i] = { value: null };
+            if (!material.uniforms["vox_texture_" + i]) {
+                material.uniforms["vox_texture_" + i] = { value: null };
             }
-            material.uniforms["texture_" + i].value = tex;
+            material.uniforms["vox_texture_" + i].value = tex;
         } else {
-            delete material.uniforms["texture_" + i];
+            delete material.uniforms["vox_texture_" + i];
         }
         if (mat.normal) {
             const tex = await new THREE.TextureLoader().loadAsync(mat.normal);
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.RepeatWrapping;
             mat.textureGl = tex;
-            if (!material.uniforms["texture_" + i + "_n"]) {
-                material.uniforms["texture_" + i + "_n"] = { value: null };
+            if (!material.uniforms["vox_texture_" + i + "_n"]) {
+                material.uniforms["vox_texture_" + i + "_n"] = { value: null };
             }
-            material.uniforms["texture_" + i + "_n"].value = tex;
+            material.uniforms["vox_texture_" + i + "_n"].value = tex;
         } else {
-            delete material.uniforms["texture_" + i + "_n"];
+            delete material.uniforms["vox_texture_" + i + "_n"];
         }
         index++;
     }
 }
 
 function _createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffset = false, isBake = false) {
-
     const materials = state.materials;
 
     let voxelColorFunc = "";
@@ -90,10 +89,10 @@ function _createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffs
         if (!material) return;
         const color = new THREE.Color(material.color).toArray();
         if (material.texture) {
-            uniforms += `uniform sampler2D texture_${index + 1};`;
+            uniforms += `uniform sampler2D vox_texture_${index + 1};`;
         }
         if (material.normal) {
-            uniforms += `uniform sampler2D texture_${index + 1}_n;`;
+            uniforms += `uniform sampler2D vox_texture_${index + 1}_n;`;
         }
         voxelColorFunc += `
         if (voxelId == ${index + 1}) {
@@ -102,13 +101,13 @@ function _createVoxelMaterial(chunkSize: number, borderSize: number, polygonOffs
         `;
         if (material.texture) {
             voxelColorFunc += `
-            color *= sampleTex(texture_${index + 1}, texture_${index + 1}, 16.0).rgb;
+            color *= sampleTex(vox_texture_${index + 1}, vox_texture_${index + 1}, 16.0).rgb;
             `;
         }
         if (material.normal) {
             voxelColorFunc += `
             hasNormal = true;
-            normal = sampleTex(texture_${index + 1}_n, texture_${index + 1}_n, 16.0).rgb;
+            normal = sampleTex(vox_texture_${index + 1}_n, vox_texture_${index + 1}_n, 16.0).rgb;
             `;
         }
         voxelColorFunc += `

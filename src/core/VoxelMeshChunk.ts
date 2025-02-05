@@ -138,6 +138,20 @@ class VoxelMeshChunk extends THREE.Mesh {
         this.material = createVoxelMaterial(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, (this.material as any).polygonOffset);
     }
 
+    updateDataTexture = () => {
+        const SB = VoxelMeshChunk.CHUNK_SIZE_WITH_BORDER;
+        const H = VoxelMeshChunk.CHUNK_HEIGHT;
+        for (let x = 0; x < SB; x++) {
+            for (let y = 0; y < H; y++) {
+                for (let z = 0; z < SB; z++) {
+                    const index = (y * SB * SB + (z * SB + x));
+                    this.dataTextureBuffer[index] = (this.data[x]?.[y]?.[z] || 0);
+                }
+            }
+        }
+        this.dataTexture.needsUpdate = true;
+    }
+
     update = (selfOnly: boolean, borderUpdateSet: Set<VoxelMeshChunk>, marchCubes: boolean, smoothNormals: boolean, smoothGeometry: boolean, subdivideGeometry: boolean) => {
         if (!selfOnly) {
             this.updateBorders();

@@ -5,13 +5,40 @@ import { getTextureAsDataUrl, ShaderBaker } from 'three-shader-baker';
 import { createVoxelMaterialAsync } from '../voxel-shader';
 import { GLTFExporter } from 'three/examples/jsm/Addons.js';
 
+function upwrapUvsNonIndexed(geometry) {
+    const positions = geometry.attributes.position.array;
+    const triangleCount = positions.length / 9;
+    const gridSize = Math.ceil(Math.sqrt(triangleCount));
+    const cellSize = 1 / gridSize;
+    const uvs = new Float32Array(triangleCount * 6);
+
+    for (let i = 0; i < triangleCount; i++) {
+        const col = i % gridSize;
+        const row = Math.floor(i / gridSize);
+        const baseU = col * cellSize;
+        const baseV = row * cellSize;
+        uvs[i * 6] = baseU; 
+        uvs[i * 6 + 1] = baseV;
+        uvs[i * 6 + 2] = baseU + cellSize;
+        uvs[i * 6 + 3] = baseV;
+        uvs[i * 6 + 4] = baseU;
+        uvs[i * 6 + 5] = baseV + cellSize;
+    }
+
+    geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+}
+
 function unwrapUvs(geometry) {
+    if (!geometry.index) {
+        return upwrapUvsNonIndexed(geometry);
+    }
     const positions = geometry.attributes.position.array;
     const indices = geometry.index.array;
     const triangleCount = indices.length / 3;
     const gridSize = Math.ceil(Math.sqrt(triangleCount));
     const cellSize = 1 / gridSize;
     const uvs = new Float32Array((positions.length / 3) * 2);
+
     for (let i = 0; i < triangleCount; i++) {
         const col = i % gridSize;
         const row = Math.floor(i / gridSize);
@@ -66,7 +93,7 @@ function transformUvs(geometry: THREE.BufferGeometry, transform: (u: number, v: 
     geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
 }
 
-async function exportScene(selectedOnly: boolean, visibleOnly: boolean, format: string) {
+async function exportScene(selectedOnly: boolean, visibleOnly: boolean, format: string, exportQuality: 0 | 1 | 2) {
     const exportScene = new THREE.Scene();
     const chunks = [];
     state.renderingContext().scene.traverse((child) => {
@@ -80,41 +107,59 @@ async function exportScene(selectedOnly: boolean, visibleOnly: boolean, format: 
             }
         }
     });
-    for await (const chunk of chunks) {
-        const geometry = chunk.createExportGeometry();
-        const baker = new ShaderBaker();
-        let result;
-        unwrapUvs(geometry);
-        let exportMesh;
-        if (!chunk.voxelMesh.marchCubes) {
-            const prevGeometry = chunk.geometry;
-            const prevMaterial = chunk.material;
-            chunk.geometry = geometry;
-            chunk.material = await createVoxelMaterialAsync(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, false, true);
+    
+    const voxelMeshes = {};
 
-            result = baker.bake(state.renderingContext().renderer, chunk, {
-                size: 2048
-            });
-            const texUrl = getTextureAsDataUrl(state.renderingContext().renderer, result.texture);
-            chunk.geometry = prevGeometry;
-            chunk.material.dispose();
-            chunk.material = prevMaterial;
-            transformUvs(geometry, (u, v) => {
-                return new THREE.Vector2(u, -v + 1);
-            });
-            scaleUvTris(geometry, new THREE.Vector2(0.8, 0.8));
-            exportMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-                map: await new THREE.TextureLoader().loadAsync(texUrl)
-            }));
-        } else {
-            exportMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    for await (let chunk of chunks) {
+        let geometry = chunk.createExportGeometry();
+        if (chunk.voxelMesh.smoothNormals) {
+            const newGeometry = geometry.toNonIndexed();
+            geometry.dispose();
+            geometry = newGeometry;
         }
+        const baker = new ShaderBaker();
+        unwrapUvs(geometry);
+
+        // bake
+        const prevGeometry = chunk.geometry;
+        const prevMaterial = chunk.material;
+        const prevPosition = chunk.position.clone();
+        chunk.geometry = geometry;
+        chunk.material = await createVoxelMaterialAsync(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, false, true);
+        chunk.updateDataTexture();
+        chunk.position.set(-8, 0, -8);
+        const sizes = [1024, 2048, 4096];
+        const result = baker.bake(state.renderingContext().renderer, chunk, {
+            size: sizes[exportQuality]
+        });
+        
+        const texUrl = getTextureAsDataUrl(state.renderingContext().renderer, result.texture);
+        chunk.geometry = prevGeometry;
+        chunk.material.dispose();
+        chunk.material = prevMaterial;
+        chunk.position.copy(prevPosition);
+        transformUvs(geometry, (u, v) => {
+            return new THREE.Vector2(u, -v + 1);
+        });
+        scaleUvTris(geometry, new THREE.Vector2(0.8, 0.8));
+        const exportMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+            map: await new THREE.TextureLoader().loadAsync(texUrl)
+        }));
+
         exportMesh.position.copy(chunk.position);
         exportMesh.scale.copy(chunk.scale);
         exportMesh.rotation.copy(chunk.rotation);
+        if (!voxelMeshes[chunk.voxelMesh.id]) {
+            const voxelMesh = new THREE.Object3D();
+            voxelMeshes[chunk.voxelMesh.id] = voxelMesh;
+            voxelMesh.position.copy(chunk.voxelMesh.position);
+            voxelMesh.scale.copy(chunk.voxelMesh.scale);
+            voxelMesh.rotation.copy(chunk.voxelMesh.rotation);
+            exportScene.add(voxelMesh);
+        }
+        voxelMeshes[chunk.voxelMesh.id].add(exportMesh);
         baker.dispose();
-        result?.dispose();
-        exportScene.add(exportMesh);
+        result.dispose();
     }
     const exporter = new GLTFExporter();
     exporter.parse(exportScene, (gltf) => {

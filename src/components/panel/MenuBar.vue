@@ -234,9 +234,16 @@ export default defineComponent({
             state.renderingContext().open();
             this.close("mouseInFile");
         },
-        exportModel(format: "glb" | "gltf") {
-            exportScene(this.selectedOnly, this.visibleOnly, format);
+        newFile() {
             this.close("mouseInFile");
+            open(location.href);
+        },
+        exportModel(format: "glb" | "gltf") {
+            this.close("mouseInFile");
+            exportScene(this.selectedOnly, this.visibleOnly, format, this.exportQuality);
+        },
+        exportQualityChanged(ev: Event) {
+            this.exportQuality = +(ev.target as HTMLInputElement)?.value || 1;
         }
     },
     data() {
@@ -250,6 +257,7 @@ export default defineComponent({
             isAnyOpen: false,
             selectedOnly: false,
             visibleOnly: true,
+            exportQuality: 1,
             state
         }
     },
@@ -273,6 +281,10 @@ export default defineComponent({
                     </div>
                     <div v-if="mouseInFile" class="menu-list-container">
                         <div class="menu-list">
+                            <div @click.stop="newFile" class="menu-bar-item-btn">
+                                <div>New</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)"></div>
+                            </div>
                             <div @click="openFile" class="menu-bar-item-btn">
                                 <div>Open</div>
                                 <div style="font-size: small; color: var(--color-text-disabled)">(Ctrl + O)</div>
@@ -310,11 +322,19 @@ export default defineComponent({
                                             <div>Selected only</div>
                                             <input :checked="selectedOnly" @change="selectedOnly = !selectedOnly" type="checkbox">
                                         </div>
-                                        <div @click="exportModel('glb')" class="menu-bar-item-btn">
+                                        <div class="menu-bar-item-btn option">
+                                            <div>Quality </div>
+                                            <div style="display: flex; flex: 1; justify-content: end; color: var(--color-text-disabled)">
+                                                <div style="font-size: smaller;">Low</div>
+                                                <input style="width: 90px" @change="exportQualityChanged" :value="exportQuality" min="0" max="2" type="range">
+                                                <div style="font-size: smaller;">High</div>
+                                            </div>
+                                        </div>
+                                        <div @click.stop="exportModel('glb')" class="menu-bar-item-btn">
                                             <div>Export binary</div>
                                             <div style="font-size: small; color: var(--color-text-disabled)">(*.glb)</div>
                                         </div>
-                                        <div @click="exportModel('gltf')" class="menu-bar-item-btn">
+                                        <div @click.stop="exportModel('gltf')" class="menu-bar-item-btn">
                                             <div>Export JSON</div>
                                             <div style="font-size: small; color: var(--color-text-disabled)">(*.gltf)</div>
                                         </div>

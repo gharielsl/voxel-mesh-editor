@@ -37,7 +37,7 @@ It allows to import and voxelize 3D models, sculpt with voxels, and to smooth ou
     - [ ] Export .vox
     - [x] Export GLB/GLTF
     - [x] Bake textures
-    - [ ] Flawless marching cubes export
+    - [x] Flawless marching cubes export
 - Animation
     - Not happening any time soon
 
