@@ -43,6 +43,7 @@ class VoxelMeshChunk extends THREE.Mesh {
         }));
         (this.wireframeMesh as any).disableMouseEvents = true;
         this.wireframeMesh.visible = false;
+        this.receiveShadow = state.currentRenderMode === 'Shadows';
         this.add(this.wireframeMesh);
     }
 

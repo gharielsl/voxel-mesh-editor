@@ -34,7 +34,7 @@ export default defineComponent({
         },
         addVoxelMesh() {
             const vo = new VoxelMesh();
-            vo.draw(new THREE.Vector3(), 'square', 5, 1);
+            vo.draw(new THREE.Vector3(), 'square', 5, state.materials.indexOf(state.selectedMaterial) + 1);
             vo.update();
             const renderingContext = state.renderingContext();
             renderingContext?.clickableObjects.push(vo);
@@ -50,7 +50,23 @@ export default defineComponent({
         },
         addVoxel() {
             const vo = new VoxelMesh();
-            vo.draw(new THREE.Vector3(), 'square', 0, 1);
+            vo.draw(new THREE.Vector3(), 'square', 0, state.materials.indexOf(state.selectedMaterial) + 1);
+            vo.update();
+            const renderingContext = state.renderingContext();
+            renderingContext?.clickableObjects.push(vo);
+            renderingContext?.scene.add(vo);
+            if (state.currentMode === 'object') {
+                vo.select();
+                TransformationContext.INSTANCE.selectedObjects.push(vo);
+                if (renderingContext.outlinePass?.selectedObjects) {
+                    renderingContext.outlinePass.selectedObjects = TransformationContext.INSTANCE.selectedObjects;
+                }
+            }
+            this.close("mouseInAdd");
+        },
+        addVoxels(w: number, h: number, d: number) {
+            const vo = new VoxelMesh();
+            vo.drawBox(new THREE.Vector3(-w / 2, -h / 2, -d / 2).floor(), new THREE.Vector3(w, h, d), state.materials.indexOf(state.selectedMaterial) + 1);
             vo.update();
             const renderingContext = state.renderingContext();
             renderingContext?.clickableObjects.push(vo);
@@ -244,6 +260,13 @@ export default defineComponent({
         },
         exportQualityChanged(ev: Event) {
             this.exportQuality = +(ev.target as HTMLInputElement)?.value || 1;
+        },
+        customSizeChange(axis: 'x' | 'y' | 'z', value: string) {
+            let nvalue = Math.floor(+value);
+            if (!value || +value < 1) nvalue = 1;
+            if (+value > 100) nvalue = 100;
+            this.customSize[axis] = nvalue;
+            this.customSize = this.customSize.clone();
         }
     },
     data() {
@@ -258,6 +281,7 @@ export default defineComponent({
             selectedOnly: false,
             visibleOnly: true,
             exportQuality: 1,
+            customSize: new THREE.Vector3(1, 1, 1),
             state
         }
     },
@@ -376,13 +400,43 @@ export default defineComponent({
                     </div>
                     <div v-if="mouseInAdd" class="menu-list-container">
                         <div class="menu-list">
-                            <div @click.stop="addVoxelMesh" class="menu-bar-item-btn">
-                                <div>Voxel Mesh</div>
-                                <div style="font-size: small; color: var(--color-text-disabled)">(5x5x5)</div>
-                            </div>
                             <div @click.stop="addVoxel" class="menu-bar-item-btn">
                                 <div>Voxel</div>
                                 <div style="font-size: small; color: var(--color-text-disabled)">(1x1x1)</div>
+                            </div>
+                            <div @click.stop="addVoxelMesh" class="menu-bar-item-btn">
+                                <div>Voxel cube</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(5x5x5)</div>
+                            </div>
+                            <div @click.stop="addVoxels(20, 1, 20)" class="menu-bar-item-btn">
+                                <div>Voxel platform</div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">(20x1x20)</div>
+                            </div>
+                            <div class="menu-bar-item-btn inner">
+                                <div>Custom</div>
+                                <div class="menu-bar-list-inner-container">
+                                    <div class="menu-bar-list-inner">
+                                        <div class="menu-bar-item-btn option">
+                                            <div>Width:</div>
+                                            <input :value="customSize.x" @keyup="customSizeChange('x', ($event.target as HTMLInputElement).value)" type="number">
+                                        </div>
+                                        <div class="menu-bar-item-btn option">
+                                            <div>Height:</div>
+                                            <input :value="customSize.y" @keyup="customSizeChange('y', ($event.target as HTMLInputElement).value)" type="number">
+                                        </div>
+                                        <div class="menu-bar-item-btn option">
+                                            <div>Depth:</div>
+                                            <input :value="customSize.z" @keyup="customSizeChange('z', ($event.target as HTMLInputElement).value)" type="number">
+                                        </div>
+                                        <div @click.stop="addVoxels(customSize.x, customSize.y, customSize.z)" class="menu-bar-item-btn">
+                                            <div>Add</div>
+                                            <div style="font-size: small; color: var(--color-text-disabled)">
+                                                ({{ customSize.x }}x{{ customSize.y }}x{{ customSize.z }})
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="font-size: small; color: var(--color-text-disabled)">></div>
                             </div>
                         </div>
                     </div>
@@ -536,4 +590,13 @@ export default defineComponent({
     cursor: initial !important;
     background-color: unset !important;
 }
+
+input[type=number] {
+    width: 128px;
+    border: 1px solid var(--color-text-disabled);
+    border-radius: 8px;
+    text-align: center;
+    color: var(--color-text-disabled);
+}
+
 </style>

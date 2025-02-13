@@ -31,6 +31,8 @@ class VoxelMesh extends MeshObject {
     }
 
     _init = () => {
+        this.receiveShadow = state.currentRenderMode === 'Shadows';
+        
         this.sphere = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshStandardMaterial({
             transparent: true,
             depthTest: true,
@@ -245,6 +247,39 @@ class VoxelMesh extends MeshObject {
                 }
             }
         }
+    }
+
+    drawBox = (position: THREE.Vector3, size: THREE.Vector3, voxel: number, addUndo = false) => {
+        position = position.clone().floor();
+        let originalVoxels: any = { };
+        for (let x = 0; x < size.x; x++) {
+            for (let y = 0; y < size.y; y++) {
+                for (let z = 0; z < size.z; z++) {
+                    if (addUndo) {
+                        if (!originalVoxels[position.x + x]) originalVoxels[position.x + x] = { };
+                        if (!originalVoxels[position.x + x][position.y + y]) originalVoxels[position.x + x][position.y + y] = { };
+                        originalVoxels[position.x + x][position.y + y][position.z + z] = this.getVoxel(position.x + x, position.y + y, position.z + z);
+                    }
+                    this.setVoxel(position.x + x, position.y + y, position.z + z, voxel);
+                }
+            }
+        }
+        if (addUndo) {
+            state.pushAction({
+                in: () => {
+                    for (const [x, _] of Object.entries(originalVoxels)) {
+                        for (const [y, _] of Object.entries(originalVoxels[x])) {
+                            for (const [z, voxel] of Object.entries(originalVoxels[x][y])) {
+                                this.setVoxel(+x, +y, +z, voxel as number);
+                            }
+                        }
+                    }
+                    this.update();
+                    return false;
+                }
+            });
+        }
+        this.update();
     }
 
     draw = (position: THREE.Vector3, shape: string, size: number, voxel: number, addUndo = false) => {

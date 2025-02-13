@@ -6,7 +6,7 @@ import { VoxelMaterial } from './types/default';
 export type SharedState = {
     currentTool: string,
     currentMode: string,
-    currentRenderMode: '',
+    currentRenderMode: string,
     secondaryColor: string,
     primaryColor: string,
     clearColor: string,
@@ -40,7 +40,7 @@ export type SharedState = {
 export const state = reactive<SharedState>({
     currentTool: 'edit',
     currentMode: 'object',
-    currentRenderMode: '',
+    currentRenderMode: 'Lit',
     secondaryColor: '#b15b2e',
     primaryColor: '#3e86a0',
     clearColor: '#222222',

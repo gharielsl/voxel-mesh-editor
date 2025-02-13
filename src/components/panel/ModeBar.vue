@@ -29,6 +29,7 @@ export default defineComponent({
         },
         lightingChange(ev: Event) {
             const value = (ev.target as HTMLSelectElement)?.value;
+            state.currentRenderMode = value;
             if (value === 'Lit' || value === 'Shadows') {
                 state.renderingContext().ghostLight.visible = true;
                 state.renderingContext().nGhostLight.visible = true;
