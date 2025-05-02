@@ -127,11 +127,14 @@ async function exportScene(selectedOnly: boolean, visibleOnly: boolean, format: 
         chunk.geometry = geometry;
         chunk.material = await createVoxelMaterialAsync(VoxelMeshChunk.CHUNK_SIZE, VoxelMeshChunk.CHUNK_BORDER_SIZE, false, true);
         chunk.updateDataTexture();
+        const parent = chunk.parent;
+        chunk.parent = null;
         chunk.position.set(-8, 0, -8);
         const sizes = [1024, 2048, 4096];
         const result = baker.bake(state.renderingContext().renderer, chunk, {
             size: sizes[exportQuality]
         });
+        chunk.parent = parent;
         
         const texUrl = getTextureAsDataUrl(state.renderingContext().renderer, result.texture);
         chunk.geometry = prevGeometry;
