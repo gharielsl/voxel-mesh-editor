@@ -112,7 +112,7 @@ async function exportScene(selectedOnly: boolean, visibleOnly: boolean, format: 
 
     for await (let chunk of chunks) {
         let geometry = chunk.createExportGeometry();
-        if (chunk.voxelMesh.smoothNormals) {
+        if (chunk.voxelMesh.smoothNormals || chunk.voxelMesh.smoothGeometry || chunk.voxelMesh.subdivide) {
             const newGeometry = geometry.toNonIndexed();
             geometry.dispose();
             geometry = newGeometry;
